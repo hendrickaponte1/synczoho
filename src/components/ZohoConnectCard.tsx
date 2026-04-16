@@ -37,10 +37,10 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
 
   const redirectUri = `${window.location.origin}${ZOHO_REDIRECT_PATH}`;
 
-  // Cargar conexión actual
+  // Cargar conexión actual (y recargar cuando la pestaña vuelve a estar visible/foco)
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       const { data } = await supabase
         .from('zoho_connections')
         .select('organization_id, organization_name, status')
@@ -50,8 +50,20 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
         setConnection(data);
         setLoading(false);
       }
-    })();
-    return () => { cancelled = true; };
+    };
+    load();
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    window.addEventListener('focus', load);
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', load);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [storeId]);
 
   // Procesar callback OAuth si volvemos con ?code= en /zoho/callback (manejado en route),
