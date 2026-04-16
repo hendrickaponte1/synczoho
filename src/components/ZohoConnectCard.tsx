@@ -162,13 +162,16 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
 
   const handleDisconnect = async () => {
     if (!confirm('¿Desconectar Zoho Inventory de esta tienda?')) return;
-    const { error } = await supabase.from('zoho_connections').delete().eq('store_id', storeId);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const { error } = await supabase.functions.invoke('zoho-disconnect', {
+        body: { store_id: storeId },
+      });
+      if (error) throw error;
+      setConnection(null);
+      toast.success('Zoho desconectado');
+    } catch (e: any) {
+      toast.error(e.message || 'Error al desconectar');
     }
-    setConnection(null);
-    toast.success('Zoho desconectado');
   };
 
   const isConnected = connection?.status === 'active' && connection?.organization_id;
