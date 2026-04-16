@@ -1,6 +1,6 @@
 // Tiendanube API configuration and helpers
 
-export const TIENDANUBE_APP_ID = import.meta.env.VITE_TIENDANUBE_APP_ID || '29847';
+export const TIENDANUBE_APP_ID = '29847';
 
 // Build the authorization URL for OAuth (per Tiendanube docs)
 export const getAuthorizationUrl = (appId: string): string => {
