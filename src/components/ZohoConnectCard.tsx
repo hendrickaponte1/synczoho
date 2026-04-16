@@ -37,18 +37,22 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
 
   const redirectUri = `${window.location.origin}${ZOHO_REDIRECT_PATH}`;
 
-  // Cargar conexión actual (y recargar cuando la pestaña vuelve a estar visible/foco)
+  // Cargar conexión actual via edge function (evita problemas de RLS sin sesión)
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const { data } = await supabase
-        .from('zoho_connections')
-        .select('organization_id, organization_name, status')
-        .eq('store_id', storeId)
-        .maybeSingle();
-      if (!cancelled) {
-        setConnection(data);
-        setLoading(false);
+      try {
+        const { data, error } = await supabase.functions.invoke('zoho-connection-status', {
+          body: { store_id: storeId },
+        });
+        if (error) throw error;
+        if (!cancelled) {
+          setConnection(data?.connection || null);
+          setLoading(false);
+        }
+      } catch (e) {
+        console.error('Error loading Zoho connection status', e);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
