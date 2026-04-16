@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { LandingHero } from '@/components/LandingHero';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { AppShell } from '@/components/AppShell';
+import { ConfigurationView } from '@/components/ConfigurationView';
+import { SyncProductsView } from '@/components/SyncProductsView';
 import { useNexo } from '@/components/NexoProvider';
 import { Loader2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { TIENDANUBE_APP_ID, getEmbeddedAdminAppUrl } from '@/lib/tiendanube';
-import { ZohoConnectCard } from '@/components/ZohoConnectCard';
 
 export default function Index() {
   const [searchParams] = useSearchParams();
@@ -19,7 +18,7 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [authMessage, setAuthMessage] = useState('');
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeSection, setActiveSection] = useState('configuration');
 
   useEffect(() => {
     // If embedded in Tiendanube admin via Nexo, use store info directly
@@ -156,44 +155,33 @@ export default function Index() {
     return <LandingHero />;
   }
 
+  const sections = [
+    { id: 'configuration', label: 'Configuración' },
+    { id: 'sync-products', label: 'Sync Productos' },
+  ];
+
+  const pageTitle =
+    activeSection === 'sync-products' ? 'Sync Productos' : 'Configuración';
+
   return (
-    <DashboardLayout
+    <AppShell
       storeName={storeName}
+      sections={sections}
       activeSection={activeSection}
       onSectionChange={setActiveSection}
+      pageTitle={pageTitle}
       onDisconnect={handleDisconnect}
     >
-      {activeSection === 'dashboard' && (
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Bienvenido a TiendaSync</p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold">Tiendanube</CardTitle>
-                  <Badge variant="default" className="bg-green-500 text-white text-xs">Conectada</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Tienda: <span className="font-medium text-foreground">{storeName}</span>
-                </p>
-                {isEmbedded && storeInfo && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    País: {storeInfo.country} · Moneda: {storeInfo.currency}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <ZohoConnectCard storeId={storeId} />
-          </div>
-        </div>
+      {activeSection === 'configuration' && (
+        <ConfigurationView
+          storeId={storeId}
+          storeName={storeName}
+          storeMeta={isEmbedded && storeInfo ? { country: storeInfo.country, currency: storeInfo.currency } : null}
+        />
       )}
-    </DashboardLayout>
+      {activeSection === 'sync-products' && (
+        <SyncProductsView storeId={storeId} />
+      )}
+    </AppShell>
   );
 }
