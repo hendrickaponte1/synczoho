@@ -559,7 +559,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
         <Modal.Body padding="base">
           <Box display="flex" flexDirection="column" gap="3">
             <Text>
-              Vas a sincronizar <strong>{selectedItems.length}</strong> producto(s) de Zoho a
+              Se van a sincronizar <strong>{selectedItems.length}</strong> producto(s) de Zoho a
               Tiendanube:
             </Text>
             <Box
@@ -592,9 +592,15 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
           <Button appearance="transparent" onClick={() => setConfirmOpen(false)}>
             Cancelar
           </Button>
-          <Button appearance="primary" onClick={() => runImport()} disabled={importing}>
-            {importing ? <Spinner size="small" /> : 'Confirmar y sincronizar'}
-          </Button>
+          <ProgressButton
+            appearance="primary"
+            onClick={() => runImport()}
+            loading={importing}
+            progress={importProgress}
+            loadingLabel="Sincronizando"
+          >
+            Confirmar y sincronizar
+          </ProgressButton>
         </Modal.Footer>
       </Modal>
 
