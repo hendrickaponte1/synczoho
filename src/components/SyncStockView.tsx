@@ -1,0 +1,121 @@
+import { useState } from 'react';
+import {
+  Box, Card, Title, Text, Button, Checkbox, Select, Spinner, Alert, Tag,
+} from '@nimbus-ds/components';
+import { RedoIcon } from '@nimbus-ds/icons';
+import { supabase } from '@/integrations/supabase/client';
+import { useSyncSettings } from '@/hooks/useSyncSettings';
+import { toast } from 'sonner';
+
+interface Props { storeId: string }
+
+export function SyncStockView({ storeId }: Props) {
+  const { settings, saving, save } = useSyncSettings(storeId);
+  const [running, setRunning] = useState(false);
+  const [lastResult, setLastResult] = useState<{ updated: number; errors: number; total: number } | null>(null);
+
+  const runSync = async () => {
+    setRunning(true);
+    setLastResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-stock-run', { body: { storeId } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setLastResult({ updated: data.updated, errors: data.errors, total: data.total });
+      toast.success(`Sync completo: ${data.updated} actualizados, ${data.errors} errores`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Error en sync de stock');
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  if (!settings) {
+    return <Box display="flex" justifyContent="center" padding="6"><Spinner /></Box>;
+  }
+
+  return (
+    <Box display="flex" flexDirection="column" gap="4">
+      <Card>
+        <Card.Header>
+          <Title as="h4" fontSize="h5">Configuración de stock</Title>
+        </Card.Header>
+        <Card.Body>
+          <Box display="flex" flexDirection="column" gap="3">
+            <Checkbox
+              name="stock_enabled"
+              label="Activar sincronización de stock"
+              checked={settings.stock_enabled}
+              onChange={(e) => save({ stock_enabled: e.target.checked })}
+            />
+
+            <Box>
+              <Text fontWeight="medium">Dirección de sincronización</Text>
+              <Select
+                id="stock_direction"
+                name="stock_direction"
+                value={settings.stock_direction}
+                onChange={(e) => save({ stock_direction: e.target.value as any })}
+                disabled={!settings.stock_enabled}
+              >
+                <Select.Option value="zoho_to_tn" label="Zoho → Tiendanube (Zoho es la fuente de verdad)" />
+                <Select.Option value="tn_to_zoho" label="Tiendanube → Zoho" />
+                <Select.Option value="bidirectional" label="Bidireccional" />
+              </Select>
+            </Box>
+
+            {settings.stock_direction === 'bidirectional' && (
+              <Box>
+                <Text fontWeight="medium">Prioridad en caso de conflicto</Text>
+                <Select
+                  id="stock_priority"
+                  name="stock_priority"
+                  value={settings.stock_priority}
+                  onChange={(e) => save({ stock_priority: e.target.value as any })}
+                  disabled={!settings.stock_enabled}
+                >
+                  <Select.Option value="zoho" label="Zoho" />
+                  <Select.Option value="tiendanube" label="Tiendanube" />
+                </Select>
+              </Box>
+            )}
+
+            {saving && <Text fontSize="caption" color="neutral-textLow">Guardando…</Text>}
+          </Box>
+        </Card.Body>
+      </Card>
+
+      <Card>
+        <Card.Header>
+          <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
+            <Title as="h4" fontSize="h5">Ejecutar sincronización</Title>
+            <Button appearance="primary" onClick={runSync} disabled={!settings.stock_enabled || running}>
+              {running ? <Spinner size="small" /> : <RedoIcon />}
+              Sincronizar ahora
+            </Button>
+          </Box>
+        </Card.Header>
+        <Card.Body>
+          <Text>
+            Recorre todos los productos vinculados (Sync Productos) y ajusta el stock según la
+            dirección configurada.
+          </Text>
+          {lastResult && (
+            <Box marginTop="3" display="flex" gap="2" flexWrap="wrap">
+              <Tag appearance="primary">Total: {lastResult.total}</Tag>
+              <Tag appearance="success">Actualizados: {lastResult.updated}</Tag>
+              <Tag appearance={lastResult.errors > 0 ? 'danger' : 'neutral'}>Errores: {lastResult.errors}</Tag>
+            </Box>
+          )}
+        </Card.Body>
+      </Card>
+
+      <Alert appearance="warning" title="Importante">
+        <Text>
+          Para sincronizar stock, primero debés vincular productos en el módulo "Sync Productos".
+          El sistema usa el SKU como clave de mapeo entre las dos plataformas.
+        </Text>
+      </Alert>
+    </Box>
+  );
+}
