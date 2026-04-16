@@ -408,9 +408,16 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
       {selected.size > 0 && (
         <Alert appearance="primary" title={`${selected.size} item(s) seleccionado(s)`}>
           <Box display="flex" gap="2" alignItems="center" flexWrap="wrap">
-            <Button appearance="primary" onClick={() => setConfirmOpen(true)}>
-              <DownloadIcon /> Sincronizar seleccionados
-            </Button>
+            <ProgressButton
+              appearance="primary"
+              onClick={() => setConfirmOpen(true)}
+              loading={importing}
+              progress={importProgress}
+              icon={<DownloadIcon />}
+              loadingLabel="Sincronizando"
+            >
+              Sincronizar seleccionados
+            </ProgressButton>
             <Button appearance="transparent" onClick={() => setSelected(new Set())}>
               Cancelar
             </Button>
