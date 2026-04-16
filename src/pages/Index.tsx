@@ -129,6 +129,16 @@ export default function Index() {
     };
   }, [storeId]);
 
+  // Habilitar el resto de los módulos sólo cuando ambos canales estén conectados
+  const fullyConnected = zohoConnected === true;
+
+  // Si todavía no está totalmente conectado, sólo mostramos Configuración
+  useEffect(() => {
+    if (!fullyConnected && activeSection !== 'configuration') {
+      setActiveSection('configuration');
+    }
+  }, [fullyConnected, activeSection]);
+
   const handleDisconnect = () => {
     localStorage.removeItem('tiendanube_store_id');
     localStorage.removeItem('tiendanube_store_name');
@@ -189,17 +199,6 @@ export default function Index() {
   if (!storeId) {
     return <LandingHero />;
   }
-
-  // Habilitar el resto de los módulos sólo cuando ambos canales estén conectados
-  const fullyConnected = zohoConnected === true;
-
-  // Si todavía no está totalmente conectado, sólo mostramos Configuración
-  useEffect(() => {
-    if (!fullyConnected && activeSection !== 'configuration') {
-      setActiveSection('configuration');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fullyConnected]);
 
   const sections = fullyConnected
     ? [
