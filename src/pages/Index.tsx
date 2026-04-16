@@ -1,39 +1,25 @@
 import { useState, useEffect } from 'react';
 import { LandingHero } from '@/components/LandingHero';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { DashboardHome } from '@/components/DashboardHome';
-import { OrdersTable } from '@/components/OrdersTable';
-import { SettingsPanel } from '@/components/SettingsPanel';
-import { DeliveryAdminPanel } from '@/components/delivery/DeliveryAdminPanel';
 import { UsersManagement } from '@/components/UsersManagement';
 import { useStore } from '@/hooks/useStore';
-import { useOrders } from '@/hooks/useOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/contexts/UserRoleContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const TIENDANUBE_APP_ID = import.meta.env.VITE_TIENDANUBE_APP_ID || '11473';
 
-// Secciones restringidas solo para admins
-const ADMIN_ONLY_SECTIONS = ['orders', 'settings', 'users'];
+const ADMIN_ONLY_SECTIONS = ['users'];
 
 export default function Index() {
   const { user, loading: authLoading, isAuthenticated, signOut } = useAuth();
   const { store, loading: storeLoading, isConnected, clearStore } = useStore(user?.id);
-  const { orders, loading: ordersLoading, error: ordersError, pagination, fetchOrders } = useOrders(store?.store_id);
   const { isAdmin, loading: roleLoading } = useUserRole();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Fetch orders when store is connected
-  useEffect(() => {
-    if (isConnected && store?.store_id) {
-      fetchOrders({});
-    }
-  }, [isConnected, store?.store_id]);
-
-  // Protección de rutas: redirigir si un cliente intenta acceder a secciones de admin
   useEffect(() => {
     if (!roleLoading && !isAdmin && ADMIN_ONLY_SECTIONS.includes(activeSection)) {
       setActiveSection('dashboard');
@@ -42,7 +28,6 @@ export default function Index() {
   }, [activeSection, isAdmin, roleLoading]);
 
   const handleSectionChange = (section: string) => {
-    // Verificar permisos antes de cambiar de sección
     if (!isAdmin && ADMIN_ONLY_SECTIONS.includes(section)) {
       toast.error('Acceso denegado. Esta sección es solo para administradores.');
       return;
@@ -52,14 +37,9 @@ export default function Index() {
 
   const handleConnect = () => {
     setIsConnecting(true);
-    
-    // Generate CSRF state
     const state = Math.random().toString(36).substring(7);
     sessionStorage.setItem('tiendanube_state', state);
-
-    // Redirect to Tiendanube OAuth
     const authUrl = `https://www.tiendanube.com/apps/${TIENDANUBE_APP_ID}/authorize?state=${state}`;
-    
     window.location.href = authUrl;
   };
 
@@ -74,7 +54,6 @@ export default function Index() {
     setActiveSection('dashboard');
   };
 
-  // Loading state
   if (authLoading || storeLoading || roleLoading) {
     return (
       <div className="min-h-screen gradient-hero flex items-center justify-center">
@@ -83,7 +62,6 @@ export default function Index() {
     );
   }
 
-  // Not authenticated or not connected - show landing
   if (!isAuthenticated || !isConnected) {
     return (
       <LandingHero 
@@ -94,7 +72,6 @@ export default function Index() {
     );
   }
 
-  // Connected - show dashboard
   return (
     <DashboardLayout
       storeName={store?.store_name || 'Mi Tienda'}
@@ -106,25 +83,42 @@ export default function Index() {
       isAdmin={isAdmin}
     >
       {activeSection === 'dashboard' && (
-        <DashboardHome orders={orders} storeName={store?.store_name || 'Mi Tienda'} />
-      )}
-      
-      {activeSection === 'orders' && isAdmin && (
-        <OrdersTable
-          orders={orders}
-          loading={ordersLoading}
-          error={ordersError}
-          pagination={pagination}
-          onFetch={fetchOrders}
-        />
-      )}
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground">Bienvenido a TiendaSync — Conector Tiendanube ↔ Zoho Inventory</p>
+          </div>
 
-      {activeSection === 'delivery' && (
-        <DeliveryAdminPanel storeId={store?.store_id} userId={user?.id} />
-      )}
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  Tiendanube Conectada
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm">
+                  Tu tienda <strong>{store?.store_name}</strong> está conectada correctamente.
+                </p>
+              </CardContent>
+            </Card>
 
-      {activeSection === 'settings' && store && isAdmin && (
-        <SettingsPanel store={store} onDisconnect={handleDisconnect} />
+            <Card className="border-dashed">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                  Zoho Inventory
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm">
+                  Próximamente: conecta tu cuenta de Zoho Inventory para sincronizar productos e inventario.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       )}
 
       {activeSection === 'users' && isAdmin && (

@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { Store, ShoppingCart, LayoutDashboard, Settings, LogOut, Menu, User, Truck, Users, Lock } from 'lucide-react';
+import { Store, LayoutDashboard, LogOut, Menu, User, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -14,12 +14,8 @@ interface DashboardLayoutProps {
   isAdmin?: boolean;
 }
 
-// Definir items con permisos: 'all' = todos, 'admin' = solo admins
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'all' },
-  { id: 'orders', label: 'Ventas', icon: ShoppingCart, permission: 'admin' },
-  { id: 'delivery', label: 'Entrega Estimada', icon: Truck, permission: 'all' },
-  { id: 'settings', label: 'Configuración', icon: Settings, permission: 'admin' },
   { id: 'users', label: 'Usuarios', icon: Users, permission: 'admin' },
 ];
 
@@ -35,14 +31,12 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Filtrar items del menú según el rol
   const visibleMenuItems = menuItems.filter(item => 
     item.permission === 'all' || (item.permission === 'admin' && isAdmin)
   );
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-foreground/50 z-40 lg:hidden"
@@ -50,13 +44,11 @@ export function DashboardLayout({
         />
       )}
 
-      {/* Sidebar */}
       <aside className={cn(
         "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="h-full flex flex-col">
-          {/* Logo */}
           <div className="p-6 border-b border-border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center">
@@ -90,7 +82,6 @@ export function DashboardLayout({
             ))}
           </nav>
 
-          {/* User & Actions */}
           <div className="p-4 border-t border-border space-y-2">
             {userEmail && (
               <div className="flex items-center gap-3 px-4 py-2 text-sm text-muted-foreground">
@@ -120,16 +111,10 @@ export function DashboardLayout({
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Mobile Header */}
         <header className="lg:hidden sticky top-0 z-30 bg-card border-b border-border px-4 py-3">
           <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-            >
+            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
               <Menu className="w-5 h-5" />
             </Button>
             <span className="font-display font-bold">{storeName}</span>
@@ -137,7 +122,6 @@ export function DashboardLayout({
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 p-4 lg:p-8">
           {children}
         </main>
