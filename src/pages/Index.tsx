@@ -12,6 +12,14 @@ import { useNexo } from '@/components/NexoProvider';
 import { Loader2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { TIENDANUBE_APP_ID, getEmbeddedAdminAppUrl } from '@/lib/tiendanube';
+import {
+  HomeIcon,
+  TagIcon,
+  CashIcon,
+  StatsIcon,
+  UserGroupIcon,
+  CogIcon,
+} from '@nimbus-ds/icons';
 
 export default function Index() {
   const [searchParams] = useSearchParams();
@@ -22,10 +30,10 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [authMessage, setAuthMessage] = useState('');
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeSection, setActiveSection] = useState('configuration');
+  const [zohoConnected, setZohoConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // If embedded in Tiendanube admin via Nexo, use store info directly
     if (isEmbedded && isConnected && storeInfo) {
       setStoreId(storeInfo.id);
       setStoreName(storeInfo.name || 'Mi Tienda');
@@ -36,11 +44,11 @@ export default function Index() {
     }
 
     const code = searchParams.get('code');
-    
+
     if (code) {
       setAuthStatus('loading');
       setAuthMessage('Conectando tu tienda...');
-      
+
       async function exchangeCode() {
         try {
           const { data, error } = await supabase.functions.invoke('tiendanube-auth', {
@@ -61,7 +69,7 @@ export default function Index() {
 
             setAuthStatus('success');
             setAuthMessage(`¡Tienda "${data.store_name}" conectada exitosamente!`);
-            
+
             setTimeout(() => {
               const storeHandle = data.store_handle || localStorage.getItem('tiendanube_store_handle');
 
@@ -95,6 +103,32 @@ export default function Index() {
     setLoading(false);
   }, [searchParams, navigate, isEmbedded, isConnected, storeInfo]);
 
+  // Verificar estado de Zoho una vez que tengamos storeId
+  useEffect(() => {
+    if (!storeId) return;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('zoho-connection-status', {
+          body: { store_id: storeId },
+        });
+        if (!cancelled) {
+          const conn = data?.connection;
+          setZohoConnected(!!(conn?.status === 'active' && conn?.organization_id));
+        }
+      } catch {
+        if (!cancelled) setZohoConnected(false);
+      }
+    };
+    check();
+    const onFocus = () => check();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [storeId]);
+
   const handleDisconnect = () => {
     localStorage.removeItem('tiendanube_store_id');
     localStorage.removeItem('tiendanube_store_name');
@@ -110,7 +144,6 @@ export default function Index() {
     );
   }
 
-  // Show auth processing screen
   if (authStatus === 'loading' || authStatus === 'success' || authStatus === 'error') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -142,7 +175,6 @@ export default function Index() {
     );
   }
 
-  // If embedded but no store connected yet, show connecting state (never show landing in iframe)
   if (isEmbedded && !storeId) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -154,19 +186,33 @@ export default function Index() {
     );
   }
 
-  // If not embedded and no store connected, show landing
   if (!storeId) {
     return <LandingHero />;
   }
 
-  const sections = [
-    { id: 'dashboard', label: 'Inicio' },
-    { id: 'sync-products', label: 'Sync Productos' },
-    { id: 'sync-orders', label: 'Sync Órdenes' },
-    { id: 'sync-stock', label: 'Sync Stock' },
-    { id: 'sync-customers', label: 'Sync Clientes' },
-    { id: 'configuration', label: 'Configuración' },
-  ];
+  // Habilitar el resto de los módulos sólo cuando ambos canales estén conectados
+  const fullyConnected = zohoConnected === true;
+
+  // Si todavía no está totalmente conectado, sólo mostramos Configuración
+  useEffect(() => {
+    if (!fullyConnected && activeSection !== 'configuration') {
+      setActiveSection('configuration');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullyConnected]);
+
+  const sections = fullyConnected
+    ? [
+        { id: 'dashboard', label: 'Inicio', icon: <HomeIcon /> },
+        { id: 'sync-products', label: 'Productos', icon: <TagIcon /> },
+        { id: 'sync-orders', label: 'Órdenes', icon: <CashIcon /> },
+        { id: 'sync-stock', label: 'Stock', icon: <StatsIcon /> },
+        { id: 'sync-customers', label: 'Clientes', icon: <UserGroupIcon /> },
+        { id: 'configuration', label: 'Configuración', icon: <CogIcon /> },
+      ]
+    : [
+        { id: 'configuration', label: 'Configuración', icon: <CogIcon /> },
+      ];
 
   return (
     <AppShell
@@ -174,7 +220,7 @@ export default function Index() {
       activeSection={activeSection}
       onSectionChange={setActiveSection}
     >
-      {activeSection === 'dashboard' && (
+      {activeSection === 'dashboard' && fullyConnected && (
         <DashboardView storeId={storeId} onNavigate={setActiveSection} />
       )}
       {activeSection === 'configuration' && (
@@ -185,10 +231,10 @@ export default function Index() {
           onDisconnect={handleDisconnect}
         />
       )}
-      {activeSection === 'sync-products' && <SyncProductsView storeId={storeId} />}
-      {activeSection === 'sync-orders' && <SyncOrdersView storeId={storeId} />}
-      {activeSection === 'sync-stock' && <SyncStockView storeId={storeId} />}
-      {activeSection === 'sync-customers' && <SyncCustomersView storeId={storeId} />}
+      {activeSection === 'sync-products' && fullyConnected && <SyncProductsView storeId={storeId} />}
+      {activeSection === 'sync-orders' && fullyConnected && <SyncOrdersView storeId={storeId} />}
+      {activeSection === 'sync-stock' && fullyConnected && <SyncStockView storeId={storeId} />}
+      {activeSection === 'sync-customers' && fullyConnected && <SyncCustomersView storeId={storeId} />}
     </AppShell>
   );
 }

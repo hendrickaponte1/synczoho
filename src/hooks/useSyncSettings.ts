@@ -1,6 +1,21 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface ProductSyncFields {
+  name: boolean;
+  sku: boolean;
+  description: boolean;
+  price: boolean;
+  stock: boolean;
+  images: boolean;
+  category: boolean;
+  weight: boolean;
+  dimensions: boolean;
+  barcode: boolean;
+  brand: boolean;
+  tax: boolean;
+}
+
 export interface SyncSettings {
   store_id: string;
   orders_enabled: boolean;
@@ -12,6 +27,10 @@ export interface SyncSettings {
   stock_priority: 'zoho' | 'tiendanube';
   stock_warehouse_id: string | null;
   customers_auto_sync_on_order: boolean;
+  products_publish_on_import: boolean;
+  products_overwrite_existing: boolean;
+  products_match_strategy: 'sku' | 'name';
+  products_sync_fields: ProductSyncFields;
 }
 
 export function useSyncSettings(storeId: string | null) {
