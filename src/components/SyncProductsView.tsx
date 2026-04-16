@@ -680,7 +680,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
               <DetailRow label="SKU" value={detail.sku || '—'} />
               <DetailRow
                 label="Precio"
-                value={`$${Number(detail.rate).toLocaleString('es-AR')}`}
+                value={`$${Number(detail.rate).toLocaleString('es')}`}
               />
               <DetailRow label="Stock" value={String(detail.stock_on_hand)} />
               <DetailRow label="Estado en Zoho" value={detail.status} />
