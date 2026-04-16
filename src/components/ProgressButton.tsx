@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Box, Button, Text } from '@nimbus-ds/components';
+import { Box, Button } from '@nimbus-ds/components';
 
 interface ProgressButtonProps {
   onClick: () => void;
@@ -29,19 +29,17 @@ export function ProgressButton({
   const pct =
     progress && progress.total > 0
       ? Math.min(100, Math.round((progress.current / progress.total) * 100))
-      : loading
-      ? null
-      : 0;
+      : null;
 
   return (
-    <Box position="relative" display="inline-block" overflow="hidden" borderRadius="2">
+    <Box position="relative" overflow="hidden" borderRadius="2" display="inline-flex">
       {loading && pct !== null && (
         <Box
           position="absolute"
           top="0"
           left="0"
           height="100%"
-          width={`${pct}%`}
+          width={`${pct}%` as any}
           backgroundColor="primary-surface"
           style={{ transition: 'width 0.3s ease', zIndex: 0, opacity: 0.5 }}
         />
@@ -58,7 +56,7 @@ export function ProgressButton({
             zIndex: 0,
             opacity: 0.4,
             backgroundImage:
-              'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+              'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
             backgroundSize: '200% 100%',
             animation: 'progress-shimmer 1.5s infinite',
           }}
