@@ -48,8 +48,7 @@ export default function AuthCallback() {
           setStatus('success');
           setMessage(`¡Tienda "${data.store_name}" conectada exitosamente!`);
           
-          // Clear the state and pending code
-          sessionStorage.removeItem('tiendanube_state');
+          // Clear pending code
           sessionStorage.removeItem('pending_tiendanube_code');
           
           // Redirect to dashboard after a moment
