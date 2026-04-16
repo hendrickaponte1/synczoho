@@ -7,6 +7,7 @@ import { Loader2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { TIENDANUBE_APP_ID, getEmbeddedAdminAppUrl } from '@/lib/tiendanube';
 
 export default function Index() {
   const [searchParams] = useSearchParams();
@@ -49,10 +50,22 @@ export default function Index() {
             localStorage.setItem('tiendanube_store_name', data.store_name || 'Mi Tienda');
             setStoreId(data.store_id.toString());
             setStoreName(data.store_name || 'Mi Tienda');
+
+            if (data.store_handle) {
+              localStorage.setItem('tiendanube_store_handle', data.store_handle);
+            }
+
             setAuthStatus('success');
             setAuthMessage(`¡Tienda "${data.store_name}" conectada exitosamente!`);
             
             setTimeout(() => {
+              const storeHandle = data.store_handle || localStorage.getItem('tiendanube_store_handle');
+
+              if (storeHandle) {
+                window.location.href = getEmbeddedAdminAppUrl(storeHandle, TIENDANUBE_APP_ID);
+                return;
+              }
+
               setAuthStatus('idle');
               navigate('/', { replace: true });
             }, 2000);
