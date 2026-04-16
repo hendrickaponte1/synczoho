@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Box, Button } from '@nimbus-ds/components';
+import { Box, Button, Title } from '@nimbus-ds/components';
 
 export interface AppSection {
   id: string;
@@ -22,20 +22,27 @@ export function AppShell({
   pageActions,
   children,
 }: AppShellProps) {
+  const activeLabel = sections.find((s) => s.id === activeSection)?.label ?? '';
+
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh" backgroundColor="neutral-background">
-      {/* Header limpio: solo navegación entre módulos a la izquierda + acciones contextuales a la derecha */}
       <Box
         display="flex"
         flexDirection={{ xs: 'column', md: 'row' }}
         alignItems={{ xs: 'stretch', md: 'center' }}
         justifyContent="space-between"
-        gap="3"
+        gap="4"
         paddingX="6"
-        paddingY="4"
+        paddingY="5"
         backgroundColor="neutral-background"
       >
-        <Box display="flex" gap="2" flexWrap="wrap">
+        {/* Título de la sección a la izquierda */}
+        <Box display="flex" alignItems="center">
+          <Title as="h1" fontSize="h2">{activeLabel}</Title>
+        </Box>
+
+        {/* Navegación entre módulos + acciones contextuales a la derecha */}
+        <Box display="flex" alignItems="center" gap="2" flexWrap="wrap" justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
           {sections.map((s) => (
             <Button
               key={s.id}
@@ -46,13 +53,8 @@ export function AppShell({
               {s.label}
             </Button>
           ))}
+          {pageActions}
         </Box>
-
-        {pageActions && (
-          <Box display="flex" gap="2" flexWrap="wrap" justifyContent="flex-end">
-            {pageActions}
-          </Box>
-        )}
       </Box>
 
       <Box flex="1" paddingX="6" paddingBottom="8">
