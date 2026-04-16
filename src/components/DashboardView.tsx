@@ -30,35 +30,35 @@ interface Metrics {
 const moduleDefs = [
   {
     id: 'sync-products',
-    title: 'Sync Productos',
+    title: 'Productos',
     icon: TagIcon,
     description:
-      'Importá tu catálogo de Zoho Inventory hacia Tiendanube. Detectamos coincidencias por SKU para que decidas qué crear, vincular o ignorar. Soporta importación masiva, filtros y reintentos individuales.',
+      'Importa tu catálogo desde Zoho Inventory hacia Tiendanube. El sistema detecta coincidencias por SKU para que decidas si crear, vincular o ignorar cada producto. Soporta importación masiva, filtros y reintentos individuales.',
     settingKey: null as keyof ReturnType<typeof useSyncSettings>['settings'] | null,
     alwaysOn: true,
   },
   {
     id: 'sync-orders',
-    title: 'Sync Órdenes',
+    title: 'Órdenes',
     icon: CashIcon,
     description:
-      'Enviá automáticamente las órdenes de Tiendanube a Zoho Inventory vía webhook. Configurá si se crean como borrador, se confirman al instante o generan factura cuando la orden se paga.',
+      'Envía automáticamente las órdenes de Tiendanube a Zoho Inventory mediante webhooks. Configura si se crean como borrador, se confirman al instante o generan factura cuando la orden se paga.',
     settingKey: 'orders_enabled' as const,
   },
   {
     id: 'sync-stock',
-    title: 'Sync Stock',
+    title: 'Stock',
     icon: StatsIcon,
     description:
-      'Mantené el inventario alineado entre Zoho y Tiendanube. Sincronización bidireccional con prioridad configurable para evitar conflictos cuando hay cambios simultáneos.',
+      'Mantén el inventario alineado entre Zoho y Tiendanube. Sincronización bidireccional con prioridad configurable para evitar conflictos cuando hay cambios simultáneos.',
     settingKey: 'stock_enabled' as const,
   },
   {
     id: 'sync-customers',
-    title: 'Sync Clientes',
+    title: 'Clientes',
     icon: UserGroupIcon,
     description:
-      'Llevá los clientes de Tiendanube a Zoho como Contactos. Sincronización masiva manual y vinculación automática por email cuando se procesan órdenes nuevas.',
+      'Lleva los clientes de Tiendanube a Zoho como contactos. Sincronización masiva manual y vinculación automática por correo electrónico cuando se procesan órdenes nuevas.',
     settingKey: 'customers_auto_sync_on_order' as const,
   },
 ];
@@ -116,7 +116,7 @@ export function DashboardView({ storeId, onNavigate }: DashboardViewProps) {
 
   const formatDate = (iso: string | null) => {
     if (!iso) return 'Sin actividad';
-    return new Date(iso).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+    return new Date(iso).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
   };
 
   return (
