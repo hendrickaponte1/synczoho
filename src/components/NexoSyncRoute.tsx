@@ -2,9 +2,9 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ACTION_NAVIGATE_SYNC,
+  syncPathname,
   type NavigateSyncResponse,
-} from "@tiendanube/nexo/actions";
-import { syncPathname } from "@tiendanube/nexo/helpers";
+} from "@tiendanube/nexo";
 import nexo from "@/lib/nexoClient";
 
 const NexoSyncRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
