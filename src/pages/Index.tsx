@@ -4,6 +4,9 @@ import { LandingHero } from '@/components/LandingHero';
 import { AppShell } from '@/components/AppShell';
 import { ConfigurationView } from '@/components/ConfigurationView';
 import { SyncProductsView } from '@/components/SyncProductsView';
+import { SyncOrdersView } from '@/components/SyncOrdersView';
+import { SyncStockView } from '@/components/SyncStockView';
+import { SyncCustomersView } from '@/components/SyncCustomersView';
 import { useNexo } from '@/components/NexoProvider';
 import { Loader2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -158,30 +161,29 @@ export default function Index() {
   const sections = [
     { id: 'configuration', label: 'Configuración' },
     { id: 'sync-products', label: 'Sync Productos' },
+    { id: 'sync-orders', label: 'Sync Órdenes' },
+    { id: 'sync-stock', label: 'Sync Stock' },
+    { id: 'sync-customers', label: 'Sync Clientes' },
   ];
-
-  const pageTitle =
-    activeSection === 'sync-products' ? 'Sync Productos' : 'Configuración';
 
   return (
     <AppShell
-      storeName={storeName}
       sections={sections}
       activeSection={activeSection}
       onSectionChange={setActiveSection}
-      pageTitle={pageTitle}
-      onDisconnect={handleDisconnect}
     >
       {activeSection === 'configuration' && (
         <ConfigurationView
           storeId={storeId}
           storeName={storeName}
           storeMeta={isEmbedded && storeInfo ? { country: storeInfo.country, currency: storeInfo.currency } : null}
+          onDisconnect={handleDisconnect}
         />
       )}
-      {activeSection === 'sync-products' && (
-        <SyncProductsView storeId={storeId} />
-      )}
+      {activeSection === 'sync-products' && <SyncProductsView storeId={storeId} />}
+      {activeSection === 'sync-orders' && <SyncOrdersView storeId={storeId} />}
+      {activeSection === 'sync-stock' && <SyncStockView storeId={storeId} />}
+      {activeSection === 'sync-customers' && <SyncCustomersView storeId={storeId} />}
     </AppShell>
   );
 }
