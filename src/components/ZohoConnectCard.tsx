@@ -96,7 +96,17 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
       });
       if (error) throw error;
       if (data.auth_url) {
-        window.location.href = data.auth_url;
+        // Zoho bloquea iframes (X-Frame-Options). Romper el iframe o abrir nueva pestaña.
+        const isEmbedded = window.top !== window.self;
+        if (isEmbedded) {
+          try {
+            window.top!.location.href = data.auth_url;
+          } catch {
+            window.open(data.auth_url, '_blank', 'noopener,noreferrer');
+          }
+        } else {
+          window.location.href = data.auth_url;
+        }
       }
     } catch (e: any) {
       console.error(e);
