@@ -8,6 +8,7 @@ import { useUserRole } from '@/contexts/UserRoleContext';
 import { Loader2, CheckCircle, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const TIENDANUBE_APP_ID = import.meta.env.VITE_TIENDANUBE_APP_ID || '11473';
 
@@ -39,8 +40,7 @@ export default function Index() {
     setIsConnecting(true);
     const state = Math.random().toString(36).substring(7);
     sessionStorage.setItem('tiendanube_state', state);
-    const authUrl = `https://www.tiendanube.com/apps/${TIENDANUBE_APP_ID}/authorize?state=${state}`;
-    window.location.href = authUrl;
+    window.location.href = `https://www.tiendanube.com/apps/${TIENDANUBE_APP_ID}/authorize?state=${state}`;
   };
 
   const handleDisconnect = async () => {
@@ -56,8 +56,8 @@ export default function Index() {
 
   if (authLoading || storeLoading || roleLoading) {
     return (
-      <div className="min-h-screen gradient-hero flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-primary animate-spin" />
       </div>
     );
   }
@@ -85,35 +85,35 @@ export default function Index() {
       {activeSection === 'dashboard' && (
         <div className="space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground">Bienvenido a TiendaSync — Conector Tiendanube ↔ Zoho Inventory</p>
+            <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Estado de tus conexiones y sincronización</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  Tiendanube Conectada
-                </CardTitle>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold">Tiendanube</CardTitle>
+                  <Badge variant="default" className="bg-success text-success-foreground text-xs">Conectada</Badge>
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  Tu tienda <strong>{store?.store_name}</strong> está conectada correctamente.
+                <p className="text-sm text-muted-foreground">
+                  Tienda: <span className="font-medium text-foreground">{store?.store_name}</span>
                 </p>
               </CardContent>
             </Card>
 
             <Card className="border-dashed">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <ArrowRight className="w-5 h-5 text-muted-foreground" />
-                  Zoho Inventory
-                </CardTitle>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold">Zoho Inventory</CardTitle>
+                  <Badge variant="secondary" className="text-xs">Pendiente</Badge>
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  Próximamente: conecta tu cuenta de Zoho Inventory para sincronizar productos e inventario.
+                <p className="text-sm text-muted-foreground">
+                  Conecta tu cuenta de Zoho Inventory para iniciar la sincronización.
                 </p>
               </CardContent>
             </Card>

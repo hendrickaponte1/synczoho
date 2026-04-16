@@ -1,4 +1,4 @@
-import { Store, RefreshCw, Package, Zap, LogIn } from 'lucide-react';
+import { RefreshCw, Package, ShoppingBag, ArrowRight, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,21 +12,22 @@ export function LandingHero({ onConnect, isLoading, isAuthenticated }: LandingHe
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen gradient-hero flex flex-col">
-      <header className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center">
-              <Store className="w-5 h-5 text-primary-foreground" />
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="border-b border-border">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <RefreshCw className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-display text-xl font-bold text-white">TiendaSync</span>
+            <span className="text-lg font-bold text-foreground tracking-tight">TiendaSync</span>
           </div>
           
           {!isAuthenticated && (
             <Button
               variant="ghost"
               onClick={() => navigate('/auth')}
-              className="text-white/80 hover:text-white hover:bg-white/10"
+              className="text-muted-foreground hover:text-foreground"
             >
               <LogIn className="w-4 h-4 mr-2" />
               Iniciar Sesión
@@ -35,84 +36,92 @@ export function LandingHero({ onConnect, isLoading, isAuthenticated }: LandingHe
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-4 flex items-center">
-        <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
-          <div className="animate-slide-up">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
-              <Zap className="w-4 h-4 text-accent" />
-              <span className="text-sm text-white/90">Conector Tiendanube ↔ Zoho Inventory</span>
-            </div>
-            
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-              Sincroniza tu inventario de forma
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary-foreground"> automática</span>
-            </h1>
-            
-            <p className="text-lg text-white/70 mb-8 max-w-xl">
-              Conecta tu tienda de Tiendanube con Zoho Inventory y mantén tus productos, stock y pedidos sincronizados en tiempo real.
-            </p>
+      {/* Hero */}
+      <main className="flex-1 flex flex-col">
+        <section className="flex-1 flex items-center">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div className="max-w-3xl mx-auto text-center animate-slide-up">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 border border-primary/15 mb-6">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <span className="text-xs font-medium text-primary">Conector para Tiendanube</span>
+              </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              {isAuthenticated ? (
-                <Button
-                  size="lg"
-                  onClick={onConnect}
-                  disabled={isLoading}
-                  className="gradient-brand text-white font-semibold px-8 py-6 text-lg rounded-xl shadow-glow hover:opacity-90 transition-opacity"
-                >
-                  {isLoading ? 'Conectando...' : 'Conectar mi Tienda'}
-                </Button>
-              ) : (
-                <>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-[1.1] tracking-tight mb-6">
+                Sincroniza tu tienda con{' '}
+                <span className="text-primary">Zoho Inventory</span>
+              </h1>
+              
+              <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed">
+                Conecta Tiendanube y Zoho Inventory para mantener precios, stock y órdenes sincronizados de forma automática.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                {isAuthenticated ? (
                   <Button
                     size="lg"
-                    onClick={() => navigate('/auth')}
-                    className="gradient-brand text-white font-semibold px-8 py-6 text-lg rounded-xl shadow-glow hover:opacity-90 transition-opacity"
+                    onClick={onConnect}
+                    disabled={isLoading}
+                    className="px-8 h-12 text-base font-semibold rounded-lg"
                   >
-                    Comenzar Ahora
+                    {isLoading ? 'Conectando...' : 'Conectar mi Tienda'}
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => navigate('/auth')}
-                    className="border-white/20 text-white hover:bg-white/10 px-8 py-6 text-lg rounded-xl"
-                  >
-                    Ya tengo cuenta
-                  </Button>
-                </>
-              )}
+                ) : (
+                  <>
+                    <Button
+                      size="lg"
+                      onClick={() => navigate('/auth')}
+                      className="px-8 h-12 text-base font-semibold rounded-lg"
+                    >
+                      Comenzar gratis
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() => navigate('/auth')}
+                      className="px-8 h-12 text-base font-semibold rounded-lg"
+                    >
+                      Ya tengo cuenta
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
+        </section>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            <FeatureCard
-              icon={RefreshCw}
-              title="Sincronización"
-              description="Mantén tu inventario sincronizado entre Tiendanube y Zoho Inventory"
-            />
-            <FeatureCard
-              icon={Package}
-              title="Productos"
-              description="Sincroniza productos, variantes y precios automáticamente"
-            />
-            <FeatureCard
-              icon={Store}
-              title="Multi-tienda"
-              description="Conecta múltiples tiendas a una misma cuenta de Zoho"
-            />
-            <FeatureCard
-              icon={Zap}
-              title="Tiempo Real"
-              description="Actualizaciones instantáneas de stock y pedidos"
-            />
+        {/* Features */}
+        <section className="border-t border-border bg-secondary/40">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+            <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-4xl mx-auto">
+              <FeatureCard
+                icon={Package}
+                title="Precios de productos"
+                description="Sincroniza precios entre Tiendanube y Zoho Inventory de forma automática."
+              />
+              <FeatureCard
+                icon={RefreshCw}
+                title="Stock en tiempo real"
+                description="Mantén el inventario actualizado en ambas plataformas sin intervención manual."
+              />
+              <FeatureCard
+                icon={ShoppingBag}
+                title="Órdenes"
+                description="Las órdenes de Tiendanube se reflejan automáticamente en Zoho Inventory."
+              />
+            </div>
           </div>
-        </div>
+        </section>
       </main>
 
-      <footer className="container mx-auto px-4 py-6">
-        <p className="text-white/50 text-sm text-center">
-          Conector desarrollado para Tiendanube/Nuvemshop y Zoho Inventory
-        </p>
+      {/* Footer */}
+      <footer className="border-t border-border py-6">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-muted-foreground text-sm text-center">
+            Desarrollado para Tiendanube · Integración con Zoho Inventory
+          </p>
+        </div>
       </footer>
     </div>
   );
@@ -126,12 +135,12 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon: Icon, title, description }: FeatureCardProps) {
   return (
-    <div className="glass rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-colors">
-      <div className="w-12 h-12 rounded-xl gradient-brand flex items-center justify-center mb-4">
-        <Icon className="w-6 h-6 text-primary-foreground" />
+    <div className="bg-card rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-shadow animate-fade-in">
+      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+        <Icon className="w-5 h-5 text-primary" />
       </div>
-      <h3 className="font-display font-semibold text-white mb-2">{title}</h3>
-      <p className="text-white/60 text-sm">{description}</p>
+      <h3 className="font-semibold text-foreground mb-1.5">{title}</h3>
+      <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
     </div>
   );
 }
