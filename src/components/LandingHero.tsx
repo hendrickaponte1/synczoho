@@ -1,4 +1,4 @@
-import { Store, ShoppingCart, BarChart3, Zap, LogIn } from 'lucide-react';
+import { Store, RefreshCw, Package, Zap, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,7 +13,6 @@ export function LandingHero({ onConnect, isLoading, isAuthenticated }: LandingHe
 
   return (
     <div className="min-h-screen gradient-hero flex flex-col">
-      {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -36,23 +35,21 @@ export function LandingHero({ onConnect, isLoading, isAuthenticated }: LandingHe
         </div>
       </header>
 
-      {/* Hero Content */}
       <main className="flex-1 container mx-auto px-4 flex items-center">
         <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
-          {/* Left Column - Text */}
           <div className="animate-slide-up">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
               <Zap className="w-4 h-4 text-accent" />
-              <span className="text-sm text-white/90">Plugin para Tiendanube</span>
+              <span className="text-sm text-white/90">Conector Tiendanube ↔ Zoho Inventory</span>
             </div>
             
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-              Gestiona tus ventas de forma
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary-foreground"> inteligente</span>
+              Sincroniza tu inventario de forma
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary-foreground"> automática</span>
             </h1>
             
             <p className="text-lg text-white/70 mb-8 max-w-xl">
-              Conecta tu tienda de Tiendanube y obtén acceso a un dashboard completo para visualizar, filtrar y analizar todas tus ventas en tiempo real.
+              Conecta tu tienda de Tiendanube con Zoho Inventory y mantén tus productos, stock y pedidos sincronizados en tiempo real.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -87,36 +84,34 @@ export function LandingHero({ onConnect, isLoading, isAuthenticated }: LandingHe
             </div>
           </div>
 
-          {/* Right Column - Features */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
             <FeatureCard
-              icon={ShoppingCart}
-              title="Todas tus Ventas"
-              description="Visualiza todas las órdenes de tu tienda en un solo lugar"
+              icon={RefreshCw}
+              title="Sincronización"
+              description="Mantén tu inventario sincronizado entre Tiendanube y Zoho Inventory"
             />
             <FeatureCard
-              icon={BarChart3}
-              title="Filtros Avanzados"
-              description="Filtra por estado, fecha, método de pago y más"
+              icon={Package}
+              title="Productos"
+              description="Sincroniza productos, variantes y precios automáticamente"
             />
             <FeatureCard
               icon={Store}
               title="Multi-tienda"
-              description="Conecta múltiples tiendas y gestiónalas desde aquí"
+              description="Conecta múltiples tiendas a una misma cuenta de Zoho"
             />
             <FeatureCard
               icon={Zap}
               title="Tiempo Real"
-              description="Datos actualizados directamente desde la API"
+              description="Actualizaciones instantáneas de stock y pedidos"
             />
           </div>
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="container mx-auto px-4 py-6">
         <p className="text-white/50 text-sm text-center">
-          Plugin desarrollado para Tiendanube/Nuvemshop
+          Conector desarrollado para Tiendanube/Nuvemshop y Zoho Inventory
         </p>
       </footer>
     </div>
