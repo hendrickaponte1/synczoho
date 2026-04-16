@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const clientId = Deno.env.get("ZOHO_CLIENT_ID");
 
     if (!clientId) {
@@ -35,26 +35,6 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "ZOHO_CLIENT_ID not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
-    }
-
-    // Validar JWT del usuario
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing Authorization" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     const body = await req.json().catch(() => ({}));
@@ -69,25 +49,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verificar que la tienda pertenece al usuario
-    const { data: store, error: storeErr } = await supabase
+    // Verificar que la tienda existe (usando service role, sin requerir sesión)
+    const admin = createClient(supabaseUrl, serviceKey);
+    const { data: store, error: storeErr } = await admin
       .from("stores")
       .select("store_id, user_id")
       .eq("store_id", storeId)
-      .eq("user_id", user.id)
       .maybeSingle();
 
     if (storeErr || !store) {
-      return new Response(JSON.stringify({ error: "Store not found or not owned" }), {
-        status: 403,
+      return new Response(JSON.stringify({ error: "Store not found" }), {
+        status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const accountsBase = DC_DOMAINS[dc] || DC_DOMAINS.com;
 
-    // El state lleva store_id + dc + user_id (firmado de forma simple en base64)
-    const statePayload = JSON.stringify({ s: storeId, d: dc, u: user.id, t: Date.now() });
+    // El state lleva store_id + dc + user_id (si existe)
+    const statePayload = JSON.stringify({
+      s: storeId,
+      d: dc,
+      u: store.user_id || null,
+      t: Date.now(),
+    });
     const state = btoa(statePayload);
 
     const authUrl = new URL(`${accountsBase}/oauth/v2/auth`);
