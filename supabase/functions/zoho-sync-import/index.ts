@@ -10,7 +10,19 @@ interface ImportRequest {
     tiendanube_product_id?: number | null;
   }>;
   publish?: boolean; // si false (default), crea como borrador
+  fields?: Partial<Record<
+    "name" | "sku" | "description" | "price" | "stock" | "images" | "category" |
+    "weight" | "dimensions" | "barcode" | "brand" | "tax",
+    boolean
+  >>;
+  overwrite?: boolean; // si false, en update no pisa campos existentes
 }
+
+const DEFAULT_FIELDS = {
+  name: true, sku: true, description: true, price: true, stock: true,
+  images: false, category: false, weight: false, dimensions: false,
+  barcode: false, brand: false, tax: false,
+} as const;
 
 const TN_API_BASE = "https://api.tiendanube.com/v1";
 
