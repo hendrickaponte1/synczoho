@@ -7,6 +7,7 @@ import { NexoProvider } from "@/components/NexoProvider";
 import NexoSyncRoute from "@/components/NexoSyncRoute";
 import Index from "./pages/Index";
 import AuthCallback from "./pages/AuthCallback";
+import ZohoCallback from "./pages/ZohoCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/zoho/callback" element={<ZohoCallback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </NexoSyncRoute>
