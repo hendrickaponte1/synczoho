@@ -1,42 +1,25 @@
-import { RefreshCw, Package, ShoppingBag, ArrowRight, LogIn } from 'lucide-react';
+import { RefreshCw, Package, ShoppingBag, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { TIENDANUBE_APP_ID, getAuthorizationUrl } from '@/lib/tiendanube';
 
-interface LandingHeroProps {
-  onConnect: () => void;
-  isLoading?: boolean;
-  isAuthenticated?: boolean;
-}
-
-export function LandingHero({ onConnect, isLoading, isAuthenticated }: LandingHeroProps) {
-  const navigate = useNavigate();
+export function LandingHero() {
+  const handleConnect = () => {
+    window.location.href = getAuthorizationUrl(TIENDANUBE_APP_ID);
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="border-b border-border">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <RefreshCw className="w-4 h-4 text-primary-foreground" />
             </div>
             <span className="text-lg font-bold text-foreground tracking-tight">TiendaSync</span>
           </div>
-          
-          {!isAuthenticated && (
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/auth')}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogIn className="w-4 h-4 mr-2" />
-              Iniciar Sesión
-            </Button>
-          )}
         </div>
       </header>
 
-      {/* Hero */}
       <main className="flex-1 flex flex-col">
         <section className="flex-1 flex items-center">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
@@ -55,43 +38,18 @@ export function LandingHero({ onConnect, isLoading, isAuthenticated }: LandingHe
                 Conecta Tiendanube y Zoho Inventory para mantener precios, stock y órdenes sincronizados de forma automática.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                {isAuthenticated ? (
-                  <Button
-                    size="lg"
-                    onClick={onConnect}
-                    disabled={isLoading}
-                    className="px-8 h-12 text-base font-semibold rounded-lg"
-                  >
-                    {isLoading ? 'Conectando...' : 'Conectar mi Tienda'}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      size="lg"
-                      onClick={() => navigate('/auth')}
-                      className="px-8 h-12 text-base font-semibold rounded-lg"
-                    >
-                      Comenzar gratis
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      onClick={() => navigate('/auth')}
-                      className="px-8 h-12 text-base font-semibold rounded-lg"
-                    >
-                      Ya tengo cuenta
-                    </Button>
-                  </>
-                )}
-              </div>
+              <Button
+                size="lg"
+                onClick={handleConnect}
+                className="px-8 h-12 text-base font-semibold rounded-lg"
+              >
+                Comenzar
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </div>
           </div>
         </section>
 
-        {/* Features */}
         <section className="border-t border-border bg-secondary/40">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
             <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-4xl mx-auto">
@@ -115,7 +73,6 @@ export function LandingHero({ onConnect, isLoading, isAuthenticated }: LandingHe
         </section>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border py-6">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-muted-foreground text-sm text-center">

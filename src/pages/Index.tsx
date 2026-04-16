@@ -1,58 +1,32 @@
 import { useState, useEffect } from 'react';
 import { LandingHero } from '@/components/LandingHero';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { UsersManagement } from '@/components/UsersManagement';
-import { useStore } from '@/hooks/useStore';
-import { useAuth } from '@/hooks/useAuth';
-import { useUserRole } from '@/contexts/UserRoleContext';
-import { Loader2, CheckCircle, ArrowRight } from 'lucide-react';
-import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-const TIENDANUBE_APP_ID = import.meta.env.VITE_TIENDANUBE_APP_ID || '11473';
-
-const ADMIN_ONLY_SECTIONS = ['users'];
-
 export default function Index() {
-  const { user, loading: authLoading, isAuthenticated, signOut } = useAuth();
-  const { store, loading: storeLoading, isConnected, clearStore } = useStore(user?.id);
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const [storeId, setStoreId] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState<string>('Mi Tienda');
+  const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
-    if (!roleLoading && !isAdmin && ADMIN_ONLY_SECTIONS.includes(activeSection)) {
-      setActiveSection('dashboard');
-      toast.error('Acceso denegado. No tienes permisos para acceder a esta sección.');
-    }
-  }, [activeSection, isAdmin, roleLoading]);
+    const id = localStorage.getItem('tiendanube_store_id');
+    const name = localStorage.getItem('tiendanube_store_name');
+    setStoreId(id);
+    if (name) setStoreName(name);
+    setLoading(false);
+  }, []);
 
-  const handleSectionChange = (section: string) => {
-    if (!isAdmin && ADMIN_ONLY_SECTIONS.includes(section)) {
-      toast.error('Acceso denegado. Esta sección es solo para administradores.');
-      return;
-    }
-    setActiveSection(section);
+  const handleDisconnect = () => {
+    localStorage.removeItem('tiendanube_store_id');
+    localStorage.removeItem('tiendanube_store_name');
+    setStoreId(null);
+    setStoreName('Mi Tienda');
   };
 
-  const handleConnect = () => {
-    setIsConnecting(true);
-    window.location.href = `https://www.tiendanube.com/apps/${TIENDANUBE_APP_ID}/authorize`;
-  };
-
-  const handleDisconnect = async () => {
-    clearStore();
-    setActiveSection('dashboard');
-  };
-
-  const handleLogout = async () => {
-    await signOut();
-    clearStore();
-    setActiveSection('dashboard');
-  };
-
-  if (authLoading || storeLoading || roleLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-6 h-6 text-primary animate-spin" />
@@ -60,31 +34,22 @@ export default function Index() {
     );
   }
 
-  if (!isAuthenticated || !isConnected) {
-    return (
-      <LandingHero 
-        onConnect={handleConnect} 
-        isLoading={isConnecting} 
-        isAuthenticated={isAuthenticated}
-      />
-    );
+  if (!storeId) {
+    return <LandingHero />;
   }
 
   return (
     <DashboardLayout
-      storeName={store?.store_name || 'Mi Tienda'}
+      storeName={storeName}
       activeSection={activeSection}
-      onSectionChange={handleSectionChange}
+      onSectionChange={setActiveSection}
       onDisconnect={handleDisconnect}
-      onLogout={handleLogout}
-      userEmail={user?.email}
-      isAdmin={isAdmin}
     >
       {activeSection === 'dashboard' && (
         <div className="space-y-6">
           <div>
             <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Estado de tus conexiones y sincronización</p>
+            <p className="text-sm text-muted-foreground">Bienvenido a TiendaSync</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -92,12 +57,12 @@ export default function Index() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-semibold">Tiendanube</CardTitle>
-                  <Badge variant="default" className="bg-success text-success-foreground text-xs">Conectada</Badge>
+                  <Badge variant="default" className="bg-green-500 text-white text-xs">Conectada</Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Tienda: <span className="font-medium text-foreground">{store?.store_name}</span>
+                  Tienda: <span className="font-medium text-foreground">{storeName}</span>
                 </p>
               </CardContent>
             </Card>
@@ -117,10 +82,6 @@ export default function Index() {
             </Card>
           </div>
         </div>
-      )}
-
-      {activeSection === 'users' && isAdmin && (
-        <UsersManagement />
       )}
     </DashboardLayout>
   );
