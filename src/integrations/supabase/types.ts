@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      customer_sync_map: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          last_error: string | null
+          last_synced_at: string | null
+          metadata: Json | null
+          status: string
+          store_id: string
+          tiendanube_customer_id: number | null
+          updated_at: string
+          zoho_contact_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          metadata?: Json | null
+          status?: string
+          store_id: string
+          tiendanube_customer_id?: number | null
+          updated_at?: string
+          zoho_contact_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          metadata?: Json | null
+          status?: string
+          store_id?: string
+          tiendanube_customer_id?: number | null
+          updated_at?: string
+          zoho_contact_id?: string | null
+        }
+        Relationships: []
+      }
       delivery_settings: {
         Row: {
           created_at: string
@@ -62,6 +104,48 @@ export type Database = {
           user_id?: string
           widget_enabled?: boolean
           working_days?: number[]
+        }
+        Relationships: []
+      }
+      order_sync_map: {
+        Row: {
+          created_at: string
+          id: string
+          last_error: string | null
+          last_synced_at: string | null
+          payload: Json | null
+          status: string
+          store_id: string
+          tiendanube_order_id: number
+          updated_at: string
+          zoho_invoice_id: string | null
+          zoho_salesorder_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          payload?: Json | null
+          status?: string
+          store_id: string
+          tiendanube_order_id: number
+          updated_at?: string
+          zoho_invoice_id?: string | null
+          zoho_salesorder_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          payload?: Json | null
+          status?: string
+          store_id?: string
+          tiendanube_order_id?: number
+          updated_at?: string
+          zoho_invoice_id?: string | null
+          zoho_salesorder_id?: string | null
         }
         Relationships: []
       }
@@ -188,6 +272,51 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_sync_state: {
+        Row: {
+          created_at: string
+          id: string
+          last_error: string | null
+          last_qty: number | null
+          last_source: string | null
+          last_synced_at: string | null
+          sku: string
+          store_id: string
+          tiendanube_product_id: number | null
+          tiendanube_variant_id: number | null
+          updated_at: string
+          zoho_item_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_qty?: number | null
+          last_source?: string | null
+          last_synced_at?: string | null
+          sku: string
+          store_id: string
+          tiendanube_product_id?: number | null
+          tiendanube_variant_id?: number | null
+          updated_at?: string
+          zoho_item_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_qty?: number | null
+          last_source?: string | null
+          last_synced_at?: string | null
+          sku?: string
+          store_id?: string
+          tiendanube_product_id?: number | null
+          tiendanube_variant_id?: number | null
+          updated_at?: string
+          zoho_item_id?: string | null
+        }
+        Relationships: []
+      }
       stores: {
         Row: {
           access_token: string
@@ -260,6 +389,54 @@ export type Database = {
           store_id?: string
           tiendanube_product_id?: number | null
           zoho_item_id?: string | null
+        }
+        Relationships: []
+      }
+      sync_settings: {
+        Row: {
+          created_at: string
+          customers_auto_sync_on_order: boolean
+          id: string
+          orders_auto_confirm: boolean
+          orders_create_as_draft: boolean
+          orders_enabled: boolean
+          orders_generate_invoice_on_paid: boolean
+          stock_direction: string
+          stock_enabled: boolean
+          stock_priority: string
+          stock_warehouse_id: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customers_auto_sync_on_order?: boolean
+          id?: string
+          orders_auto_confirm?: boolean
+          orders_create_as_draft?: boolean
+          orders_enabled?: boolean
+          orders_generate_invoice_on_paid?: boolean
+          stock_direction?: string
+          stock_enabled?: boolean
+          stock_priority?: string
+          stock_warehouse_id?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customers_auto_sync_on_order?: boolean
+          id?: string
+          orders_auto_confirm?: boolean
+          orders_create_as_draft?: boolean
+          orders_enabled?: boolean
+          orders_generate_invoice_on_paid?: boolean
+          stock_direction?: string
+          stock_enabled?: boolean
+          stock_priority?: string
+          stock_warehouse_id?: string | null
+          store_id?: string
+          updated_at?: string
         }
         Relationships: []
       }

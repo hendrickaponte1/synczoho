@@ -1,1 +1,4 @@
 project_id = "ckadkdpycqfvwtwhllxc"
+
+[functions.tiendanube-webhook]
+verify_jwt = false
