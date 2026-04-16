@@ -40,6 +40,7 @@ serve(async (req) => {
       body: JSON.stringify({
         client_id: clientId,
         client_secret: clientSecret,
+        grant_type: 'authorization_code',
         code,
       }),
     });
@@ -54,14 +55,15 @@ serve(async (req) => {
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('Token exchange successful');
+    console.log('Token response keys:', Object.keys(tokenData));
+    console.log('Token response:', JSON.stringify(tokenData));
 
     const storeId = tokenData.user_id || tokenData.store_id || tokenData.id;
     
     if (!storeId) {
       return new Response(
-        JSON.stringify({ error: 'No store ID returned from Tiendanube' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'No store ID returned from Tiendanube', tokenKeys: Object.keys(tokenData) }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
