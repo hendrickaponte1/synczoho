@@ -40,6 +40,7 @@ serve(async (req) => {
       body: JSON.stringify({
         client_id: clientId,
         client_secret: clientSecret,
+        grant_type: 'authorization_code',
         code,
       }),
     });
