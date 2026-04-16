@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { TIENDANUBE_APP_ID, getEmbeddedAdminAppUrl } from '@/lib/tiendanube';
+import { ZohoConnectCard } from '@/components/ZohoConnectCard';
 
 export default function Index() {
   const [searchParams] = useSearchParams();
@@ -189,19 +190,7 @@ export default function Index() {
               </CardContent>
             </Card>
 
-            <Card className="border-dashed">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold">Zoho Inventory</CardTitle>
-                  <Badge variant="secondary" className="text-xs">Pendiente</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Conecta tu cuenta de Zoho Inventory para iniciar la sincronización.
-                </p>
-              </CardContent>
-            </Card>
+            <ZohoConnectCard storeId={storeId} />
           </div>
         </div>
       )}

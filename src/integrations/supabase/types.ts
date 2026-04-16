@@ -344,6 +344,51 @@ export type Database = {
         }
         Relationships: []
       }
+      zoho_connections: {
+        Row: {
+          access_token: string
+          created_at: string
+          dc: string
+          id: string
+          organization_id: string | null
+          organization_name: string | null
+          refresh_token: string
+          scope: string | null
+          status: string
+          store_id: string
+          token_expires_at: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          dc?: string
+          id?: string
+          organization_id?: string | null
+          organization_name?: string | null
+          refresh_token: string
+          scope?: string | null
+          status?: string
+          store_id: string
+          token_expires_at: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          dc?: string
+          id?: string
+          organization_id?: string | null
+          organization_name?: string | null
+          refresh_token?: string
+          scope?: string | null
+          status?: string
+          store_id?: string
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       stores_public: {
