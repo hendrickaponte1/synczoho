@@ -11,19 +11,10 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const code = searchParams.get('code');
-    const state = searchParams.get('state');
 
     if (!code) {
       setStatus('error');
       setMessage('No se recibió código de autorización');
-      return;
-    }
-
-    // Verify state matches (CSRF protection)
-    const savedState = sessionStorage.getItem('tiendanube_state');
-    if (state && savedState && state !== savedState) {
-      setStatus('error');
-      setMessage('Error de validación de seguridad');
       return;
     }
 
@@ -57,8 +48,7 @@ export default function AuthCallback() {
           setStatus('success');
           setMessage(`¡Tienda "${data.store_name}" conectada exitosamente!`);
           
-          // Clear the state and pending code
-          sessionStorage.removeItem('tiendanube_state');
+          // Clear pending code
           sessionStorage.removeItem('pending_tiendanube_code');
           
           // Redirect to dashboard after a moment

@@ -38,9 +38,7 @@ export default function Index() {
 
   const handleConnect = () => {
     setIsConnecting(true);
-    const state = Math.random().toString(36).substring(7);
-    sessionStorage.setItem('tiendanube_state', state);
-    window.location.href = `https://www.tiendanube.com/apps/${TIENDANUBE_APP_ID}/authorize?state=${state}`;
+    window.location.href = `https://www.tiendanube.com/apps/${TIENDANUBE_APP_ID}/authorize`;
   };
 
   const handleDisconnect = async () => {
