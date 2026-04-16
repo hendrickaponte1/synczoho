@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
+import { RefreshCw, Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,6 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/');
@@ -50,9 +49,7 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-
     setLoading(true);
 
     try {
@@ -88,92 +85,94 @@ export default function Auth() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen gradient-hero flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-primary animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen gradient-hero flex flex-col">
+    <div className="min-h-screen bg-secondary/40 flex flex-col">
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
-        <a href="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center">
-            <Store className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-display text-xl font-bold text-white">TiendaSync</span>
-        </a>
+      <header className="bg-background border-b border-border">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
+          <a href="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <RefreshCw className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <span className="text-lg font-bold text-foreground tracking-tight">TiendaSync</span>
+          </a>
+        </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 container mx-auto px-4 flex items-center justify-center">
-        <div className="w-full max-w-md animate-slide-up">
-          <div className="glass rounded-2xl p-8 border border-white/10">
-            <div className="text-center mb-8">
-              <h1 className="font-display text-2xl font-bold text-white mb-2">
+      {/* Form */}
+      <main className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm animate-slide-up">
+          <div className="bg-card rounded-xl border border-border shadow-sm p-8">
+            <div className="text-center mb-6">
+              <h1 className="text-xl font-bold text-foreground mb-1">
                 {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
               </h1>
-              <p className="text-white/60">
+              <p className="text-sm text-muted-foreground">
                 {isLogin 
-                  ? 'Accede a tu dashboard de ventas' 
+                  ? 'Accede a tu panel de sincronización' 
                   : 'Regístrate para conectar tu tienda'}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-white/80">Email</Label>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="tu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-11 bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-accent"
+                    className="pl-10 h-10"
                     disabled={loading}
                   />
                 </div>
                 {errors.email && (
-                  <p className="text-sm text-red-400">{errors.email}</p>
+                  <p className="text-xs text-destructive">{errors.email}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-white/80">Contraseña</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-sm font-medium text-foreground">Contraseña</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-11 pr-11 bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-accent"
+                    className="pl-10 pr-10 h-10"
                     disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-sm text-red-400">{errors.password}</p>
+                  <p className="text-xs text-destructive">{errors.password}</p>
                 )}
               </div>
 
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full gradient-brand text-white font-semibold py-6 rounded-xl shadow-glow hover:opacity-90 transition-opacity"
+                className="w-full h-10 font-semibold rounded-lg"
               >
                 {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : isLogin ? (
                   'Iniciar Sesión'
                 ) : (
@@ -182,19 +181,19 @@ export default function Auth() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-5 text-center">
               <button
                 type="button"
                 onClick={() => {
                   setIsLogin(!isLogin);
                   setErrors({});
                 }}
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 {isLogin ? (
-                  <>¿No tienes cuenta? <span className="text-accent font-medium">Regístrate</span></>
+                  <>¿No tienes cuenta? <span className="text-primary font-medium">Regístrate</span></>
                 ) : (
-                  <>¿Ya tienes cuenta? <span className="text-accent font-medium">Inicia sesión</span></>
+                  <>¿Ya tienes cuenta? <span className="text-primary font-medium">Inicia sesión</span></>
                 )}
               </button>
             </div>
@@ -202,10 +201,9 @@ export default function Auth() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="container mx-auto px-4 py-6">
-        <p className="text-white/50 text-sm text-center">
-          Plugin desarrollado para Tiendanube/Nuvemshop
+      <footer className="py-4">
+        <p className="text-muted-foreground text-xs text-center">
+          Desarrollado para Tiendanube · Integración con Zoho Inventory
         </p>
       </footer>
     </div>
