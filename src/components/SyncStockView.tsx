@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import {
-  Box, Card, Title, Text, Button, Checkbox, Select, Spinner, Alert, Tag,
+  Box, Card, Title, Text, Checkbox, Select, Spinner, Alert, Tag,
 } from '@nimbus-ds/components';
 import { RedoIcon } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
+import { ProgressButton } from '@/components/ProgressButton';
 import { toast } from 'sonner';
 
 interface Props { storeId: string }
@@ -12,21 +13,25 @@ interface Props { storeId: string }
 export function SyncStockView({ storeId }: Props) {
   const { settings, saving, save } = useSyncSettings(storeId);
   const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [lastResult, setLastResult] = useState<{ updated: number; errors: number; total: number } | null>(null);
 
   const runSync = async () => {
     setRunning(true);
     setLastResult(null);
+    setProgress({ current: 0, total: 0 });
     try {
       const { data, error } = await supabase.functions.invoke('sync-stock-run', { body: { storeId } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      setProgress({ current: data.total || 0, total: data.total || 0 });
       setLastResult({ updated: data.updated, errors: data.errors, total: data.total });
-      toast.success(`Sync completo: ${data.updated} actualizados, ${data.errors} errores`);
+      toast.success(`Sincronización completa: ${data.updated} actualizados, ${data.errors} errores`);
     } catch (e: any) {
-      toast.error(e?.message || 'Error en sync de stock');
+      toast.error(e?.message || 'Error en la sincronización de stock');
     } finally {
       setRunning(false);
+      setTimeout(() => setProgress(null), 800);
     }
   };
 
@@ -58,7 +63,7 @@ export function SyncStockView({ storeId }: Props) {
                 onChange={(e) => save({ stock_direction: e.target.value as any })}
                 disabled={!settings.stock_enabled}
               >
-                <Select.Option value="zoho_to_tn" label="Zoho → Tiendanube (Zoho es la fuente de verdad)" />
+                <Select.Option value="zoho_to_tn" label="Zoho → Tiendanube (Zoho como fuente principal)" />
                 <Select.Option value="tn_to_zoho" label="Tiendanube → Zoho" />
                 <Select.Option value="bidirectional" label="Bidireccional" />
               </Select>
@@ -89,16 +94,21 @@ export function SyncStockView({ storeId }: Props) {
         <Card.Header>
           <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
             <Title as="h4" fontSize="h5">Ejecutar sincronización</Title>
-            <Button appearance="primary" onClick={runSync} disabled={!settings.stock_enabled || running}>
-              {running ? <Spinner size="small" /> : <RedoIcon />}
+            <ProgressButton
+              onClick={runSync}
+              loading={running}
+              progress={progress}
+              disabled={!settings.stock_enabled}
+              icon={<RedoIcon />}
+              loadingLabel="Sincronizando"
+            >
               Sincronizar ahora
-            </Button>
+            </ProgressButton>
           </Box>
         </Card.Header>
         <Card.Body>
           <Text>
-            Recorre todos los productos vinculados (Sync Productos) y ajusta el stock según la
-            dirección configurada.
+            Recorre todos los productos vinculados en el módulo "Productos" y ajusta el stock según la dirección configurada.
           </Text>
           {lastResult && (
             <Box marginTop="3" display="flex" gap="2" flexWrap="wrap">
@@ -112,8 +122,8 @@ export function SyncStockView({ storeId }: Props) {
 
       <Alert appearance="warning" title="Importante">
         <Text>
-          Para sincronizar stock, primero debés vincular productos en el módulo "Sync Productos".
-          El sistema usa el SKU como clave de mapeo entre las dos plataformas.
+          Para sincronizar stock, primero debes vincular productos en el módulo "Productos".
+          El sistema utiliza el SKU como clave de mapeo entre las dos plataformas.
         </Text>
       </Alert>
     </Box>

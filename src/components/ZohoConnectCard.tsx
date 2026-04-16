@@ -184,7 +184,13 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
     <Card className={isConnected ? '' : 'border-dashed'}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-semibold">Zoho Inventory</CardTitle>
+          <div className="flex items-center gap-2">
+            <img
+              src="/zoho-inventory-logo.png"
+              alt="Zoho Inventory"
+              style={{ height: 24, width: 'auto' }}
+            />
+          </div>
           {loading ? (
             <Badge variant="secondary" className="text-xs">Cargando...</Badge>
           ) : isConnected ? (
@@ -215,7 +221,7 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
         ) : orgs ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Elegí la organización de Zoho Inventory que querés vincular:
+              Selecciona la organización de Zoho Inventory que deseas vincular:
             </p>
             <Select value={selectedOrg} onValueChange={setSelectedOrg}>
               <SelectTrigger>
@@ -237,7 +243,7 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              Conectá tu cuenta de Zoho Inventory para iniciar la sincronización de productos y stock.
+              Conecta tu cuenta de Zoho Inventory para iniciar la sincronización de productos e inventario.
             </p>
             <Button size="sm" onClick={handleConnect} disabled={connecting}>
               {connecting ? (
