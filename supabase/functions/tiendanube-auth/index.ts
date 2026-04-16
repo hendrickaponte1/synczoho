@@ -77,10 +77,13 @@ serve(async (req) => {
     });
 
     let storeName = 'Mi Tienda';
+    let storeHandle: string | null = null;
     if (storeResponse.ok) {
       const storeData = await storeResponse.json();
       storeName = storeData.name?.es || storeData.name?.en || storeData.name || 'Mi Tienda';
+      storeHandle = storeData.original_domain || storeData.permalink || storeData.domain || null;
       console.log('Store name:', storeName);
+      console.log('Store handle/domain:', storeHandle);
     }
 
     // Save to database
@@ -123,6 +126,7 @@ serve(async (req) => {
         success: true,
         store_id: storeId,
         store_name: storeName,
+        store_handle: storeHandle,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
