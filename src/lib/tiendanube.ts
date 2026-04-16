@@ -2,9 +2,9 @@
 
 export const TIENDANUBE_APP_ID = import.meta.env.VITE_TIENDANUBE_APP_ID || '11473';
 
-// Build the authorization URL for OAuth
-export const getAuthorizationUrl = (appId: string, state: string, redirectUri: string): string => {
-  return `https://www.tiendanube.com/apps/${appId}/authorize?state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+// Build the authorization URL for OAuth (per Tiendanube docs)
+export const getAuthorizationUrl = (appId: string): string => {
+  return `https://www.tiendanube.com/apps/${appId}/authorize`;
 };
 
 // Store type
