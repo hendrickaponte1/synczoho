@@ -32,7 +32,8 @@ Deno.serve(async (req) => {
   try {
     const admin = getAdminClient();
     const body = (await req.json().catch(() => ({}))) as ImportRequest;
-    const { store_id: storeId, items, publish = false } = body;
+    const { store_id: storeId, items, publish = false, fields, overwrite = true } = body;
+    const F = { ...DEFAULT_FIELDS, ...(fields || {}) };
 
     if (!storeId || !Array.isArray(items) || items.length === 0) {
       return json({ error: "store_id e items son obligatorios" }, 400);
