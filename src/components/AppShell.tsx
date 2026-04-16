@@ -1,10 +1,11 @@
 import { ReactNode } from 'react';
-import { Box, Title, Tabs, Text, Button } from '@nimbus-ds/components';
+import { Box, Title, Text, Button } from '@nimbus-ds/components';
 import { LogOutIcon, RedoIcon } from '@nimbus-ds/icons';
 
 export interface AppSection {
   id: string;
   label: string;
+  icon?: ReactNode;
 }
 
 interface AppShellProps {
@@ -29,7 +30,12 @@ export function AppShell({
   children,
 }: AppShellProps) {
   return (
-    <Box display="flex" flexDirection="column" minHeight="100vh" backgroundColor="neutral-background">
+    <Box
+      display="flex"
+      flexDirection="column"
+      minHeight="100vh"
+      backgroundColor="neutral-background"
+    >
       {/* Top bar fina con marca + tienda */}
       <Box
         display="flex"
@@ -38,9 +44,12 @@ export function AppShell({
         paddingX="6"
         paddingY="3"
         backgroundColor="neutral-surface"
-        borderBottomColor="neutral-interactive"
-        borderBottomStyle="solid"
+        borderColor="neutral-interactive"
+        borderStyle="solid"
         borderBottomWidth="1"
+        borderTopWidth="none"
+        borderLeftWidth="none"
+        borderRightWidth="none"
       >
         <Box display="flex" alignItems="center" gap="3">
           <Box
@@ -94,16 +103,19 @@ export function AppShell({
           flexWrap="wrap"
           justifyContent="flex-end"
         >
-          <Tabs>
+          {/* Navegación entre módulos como botones (más cercano al screenshot Tiendanube) */}
+          <Box display="flex" gap="2" flexWrap="wrap">
             {sections.map((s) => (
-              <Tabs.Item
+              <Button
                 key={s.id}
-                label={s.label}
-                active={activeSection === s.id}
+                appearance={activeSection === s.id ? 'primary' : 'neutral'}
                 onClick={() => onSectionChange(s.id)}
-              />
+              >
+                {s.icon}
+                {s.label}
+              </Button>
             ))}
-          </Tabs>
+          </Box>
 
           {pageActions && (
             <Box display="flex" gap="2" flexWrap="wrap">
