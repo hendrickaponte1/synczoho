@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { LandingHero } from '@/components/LandingHero';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { useNexo } from '@/components/NexoProvider';
 import { Loader2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 export default function Index() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isEmbedded, isConnected, storeInfo } = useNexo();
   const [storeId, setStoreId] = useState<string | null>(null);
   const [storeName, setStoreName] = useState<string>('Mi Tienda');
   const [loading, setLoading] = useState(true);
@@ -18,6 +20,16 @@ export default function Index() {
   const [activeSection, setActiveSection] = useState('dashboard');
 
   useEffect(() => {
+    // If embedded in Tiendanube admin via Nexo, use store info directly
+    if (isEmbedded && isConnected && storeInfo) {
+      setStoreId(storeInfo.id);
+      setStoreName(storeInfo.name || 'Mi Tienda');
+      localStorage.setItem('tiendanube_store_id', storeInfo.id);
+      localStorage.setItem('tiendanube_store_name', storeInfo.name || 'Mi Tienda');
+      setLoading(false);
+      return;
+    }
+
     const code = searchParams.get('code');
     
     if (code) {
@@ -40,7 +52,6 @@ export default function Index() {
             setAuthStatus('success');
             setAuthMessage(`¡Tienda "${data.store_name}" conectada exitosamente!`);
             
-            // Clean URL
             setTimeout(() => {
               setAuthStatus('idle');
               navigate('/', { replace: true });
@@ -65,7 +76,7 @@ export default function Index() {
     setStoreId(id);
     if (name) setStoreName(name);
     setLoading(false);
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, isEmbedded, isConnected, storeInfo]);
 
   const handleDisconnect = () => {
     localStorage.removeItem('tiendanube_store_id');
@@ -114,6 +125,7 @@ export default function Index() {
     );
   }
 
+  // If not embedded and no store connected, show landing
   if (!storeId) {
     return <LandingHero />;
   }
@@ -144,6 +156,11 @@ export default function Index() {
                 <p className="text-sm text-muted-foreground">
                   Tienda: <span className="font-medium text-foreground">{storeName}</span>
                 </p>
+                {isEmbedded && storeInfo && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    País: {storeInfo.country} · Moneda: {storeInfo.currency}
+                  </p>
+                )}
               </CardContent>
             </Card>
 
