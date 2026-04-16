@@ -25,8 +25,11 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   DownloadIcon,
+  CogIcon,
 } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
+import { useSyncSettings, type ProductSyncFields } from '@/hooks/useSyncSettings';
+import { ProgressButton } from '@/components/ProgressButton';
 import { toast } from 'sonner';
 
 interface ZohoItem {
@@ -71,6 +74,7 @@ const matchStatusTag: Record<
 };
 
 export function SyncProductsView({ storeId }: SyncProductsViewProps) {
+  const { settings, save } = useSyncSettings(storeId);
   const [items, setItems] = useState<ZohoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,8 +89,14 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [publishOnImport, setPublishOnImport] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
   const [results, setResults] = useState<ImportResult[] | null>(null);
   const [detail, setDetail] = useState<ZohoItem | null>(null);
+
+  // Sync default publish con la configuración guardada
+  useEffect(() => {
+    if (settings) setPublishOnImport(settings.products_publish_on_import);
+  }, [settings?.products_publish_on_import]);
 
   const load = async (overridePage?: number) => {
     setLoading(true);
@@ -164,6 +174,8 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
             .filter(Boolean) as ZohoItem[])
         : selectedItems;
 
+      setImportProgress({ current: 0, total: target.length });
+
       const payload = target.map((it) => {
         let action: 'create' | 'update' | 'link';
         if (it.match_status === 'linked' || it.match_status === 'imported')
@@ -177,28 +189,126 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
         };
       });
 
+      // Animación visual del progreso (la edge function procesa todo en una llamada)
+      const tick = setInterval(() => {
+        setImportProgress((p) => (p && p.current < p.total - 1 ? { ...p, current: p.current + 1 } : p));
+      }, 250);
+
       const { data, error: e } = await supabase.functions.invoke('zoho-sync-import', {
-        body: { store_id: storeId, items: payload, publish: publishOnImport },
+        body: {
+          store_id: storeId,
+          items: payload,
+          publish: publishOnImport,
+          fields: settings?.products_sync_fields,
+          overwrite: settings?.products_overwrite_existing,
+        },
       });
+      clearInterval(tick);
       if (e) throw e;
       if (data?.error) throw new Error(data.error);
+      setImportProgress({ current: target.length, total: target.length });
       setResults(data.results || []);
-      const okCount = (data.results || []).filter((r: ImportResult) => r.status === 'success')
-        .length;
-      const errCount = (data.results || []).filter((r: ImportResult) => r.status === 'error')
-        .length;
+      const okCount = (data.results || []).filter((r: ImportResult) => r.status === 'success').length;
+      const errCount = (data.results || []).filter((r: ImportResult) => r.status === 'error').length;
       if (errCount === 0) toast.success(`${okCount} producto(s) sincronizado(s)`);
-      else toast.warning(`${okCount} ok · ${errCount} con error`);
+      else toast.warning(`${okCount} correctos · ${errCount} con error`);
       load();
     } catch (err: any) {
       toast.error(err.message || 'Error en la importación');
     } finally {
       setImporting(false);
+      setTimeout(() => setImportProgress(null), 800);
     }
+  };
+
+  const FIELD_LABELS: Record<keyof ProductSyncFields, string> = {
+    name: 'Nombre',
+    sku: 'SKU',
+    description: 'Descripción',
+    price: 'Precio',
+    stock: 'Stock inicial',
+    images: 'Imágenes',
+    category: 'Categoría',
+    weight: 'Peso',
+    dimensions: 'Dimensiones',
+    barcode: 'Código de barras',
+    brand: 'Marca',
+    tax: 'Impuestos',
+  };
+
+  const toggleField = (key: keyof ProductSyncFields, value: boolean) => {
+    if (!settings) return;
+    save({ products_sync_fields: { ...settings.products_sync_fields, [key]: value } });
   };
 
   return (
     <Box display="flex" flexDirection="column" gap="4">
+      {/* Configuración del módulo */}
+      <Card>
+        <Card.Header>
+          <Box display="flex" alignItems="center" gap="2">
+            <CogIcon />
+            <Title as="h4" fontSize="h5">Configuración de productos</Title>
+          </Box>
+        </Card.Header>
+        <Card.Body>
+          {!settings ? (
+            <Spinner />
+          ) : (
+            <Box display="flex" flexDirection="column" gap="4">
+              <Box display="flex" flexDirection="column" gap="2">
+                <Checkbox
+                  name="products_publish_on_import"
+                  label="Publicar productos al importar (por defecto se crean como borrador)"
+                  checked={settings.products_publish_on_import}
+                  onChange={(e) => save({ products_publish_on_import: e.target.checked })}
+                />
+                <Checkbox
+                  name="products_overwrite_existing"
+                  label="Sobrescribir datos en productos ya vinculados al re-sincronizar"
+                  checked={settings.products_overwrite_existing}
+                  onChange={(e) => save({ products_overwrite_existing: e.target.checked })}
+                />
+              </Box>
+
+              <Box display="flex" flexDirection="column" gap="1">
+                <Text fontWeight="medium">Estrategia de coincidencia</Text>
+                <Text fontSize="caption" color="neutral-textLow">
+                  Cómo se detecta si un producto de Zoho ya existe en Tiendanube.
+                </Text>
+                <Select
+                  id="products_match_strategy"
+                  name="products_match_strategy"
+                  value={settings.products_match_strategy}
+                  onChange={(e) => save({ products_match_strategy: e.target.value as any })}
+                >
+                  <Select.Option value="sku" label="Por SKU (recomendado)" />
+                  <Select.Option value="name" label="Por nombre del producto" />
+                </Select>
+              </Box>
+
+              <Box display="flex" flexDirection="column" gap="2">
+                <Text fontWeight="medium">Campos a sincronizar desde Zoho</Text>
+                <Text fontSize="caption" color="neutral-textLow">
+                  Selecciona qué información de cada producto debe traerse o actualizarse.
+                </Text>
+                <Box display="grid" gap="2" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr', lg: 'repeat(3, 1fr)' }}>
+                  {(Object.keys(FIELD_LABELS) as Array<keyof ProductSyncFields>).map((key) => (
+                    <Checkbox
+                      key={key}
+                      name={`field_${key}`}
+                      label={FIELD_LABELS[key]}
+                      checked={!!settings.products_sync_fields?.[key]}
+                      onChange={(e) => toggleField(key, e.target.checked)}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            </Box>
+          )}
+        </Card.Body>
+      </Card>
+
       {/* Filtros */}
       <Card>
         <Card.Body>
