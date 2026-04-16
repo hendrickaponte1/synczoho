@@ -122,7 +122,7 @@ export function DashboardView({ storeId, onNavigate }: DashboardViewProps) {
   return (
     <Box display="flex" flexDirection="column" gap="6">
       {/* Métricas */}
-      <Box display="grid" gap="4" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr', lg: 'repeat(4, 1fr)' }}>
+      <Box display="grid" gap="4" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr', lg: 'repeat(4, 1fr)' }}>
         <MetricCard
           icon={<TagIcon size="medium" />}
           label="Productos sincronizados"
