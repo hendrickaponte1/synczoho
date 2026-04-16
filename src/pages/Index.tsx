@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { LandingHero } from '@/components/LandingHero';
 import { AppShell } from '@/components/AppShell';
 import { ConfigurationView } from '@/components/ConfigurationView';
+import { DashboardView } from '@/components/DashboardView';
 import { SyncProductsView } from '@/components/SyncProductsView';
 import { SyncOrdersView } from '@/components/SyncOrdersView';
 import { SyncStockView } from '@/components/SyncStockView';
@@ -21,7 +22,7 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [authMessage, setAuthMessage] = useState('');
-  const [activeSection, setActiveSection] = useState('configuration');
+  const [activeSection, setActiveSection] = useState('dashboard');
 
   useEffect(() => {
     // If embedded in Tiendanube admin via Nexo, use store info directly
@@ -159,11 +160,12 @@ export default function Index() {
   }
 
   const sections = [
-    { id: 'configuration', label: 'Configuración' },
+    { id: 'dashboard', label: 'Inicio' },
     { id: 'sync-products', label: 'Sync Productos' },
     { id: 'sync-orders', label: 'Sync Órdenes' },
     { id: 'sync-stock', label: 'Sync Stock' },
     { id: 'sync-customers', label: 'Sync Clientes' },
+    { id: 'configuration', label: 'Configuración' },
   ];
 
   return (
@@ -172,6 +174,9 @@ export default function Index() {
       activeSection={activeSection}
       onSectionChange={setActiveSection}
     >
+      {activeSection === 'dashboard' && (
+        <DashboardView storeId={storeId} onNavigate={setActiveSection} />
+      )}
       {activeSection === 'configuration' && (
         <ConfigurationView
           storeId={storeId}
