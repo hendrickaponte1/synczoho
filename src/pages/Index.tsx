@@ -125,6 +125,18 @@ export default function Index() {
     );
   }
 
+  // If embedded but no store connected yet, show connecting state (never show landing in iframe)
+  if (isEmbedded && !storeId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">Conectando con Tiendanube...</p>
+        </div>
+      </div>
+    );
+  }
+
   // If not embedded and no store connected, show landing
   if (!storeId) {
     return <LandingHero />;
