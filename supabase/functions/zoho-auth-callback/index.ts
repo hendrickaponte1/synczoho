@@ -44,24 +44,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing Authorization" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const adminClient = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json().catch(() => ({}));
     const code: string | undefined = body.code;
@@ -77,7 +60,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    let parsedState: { s: string; d: string; u: string; t: number };
+    let parsedState: { s: string; d: string; u: string | null; t: number };
     try {
       parsedState = JSON.parse(atob(state));
     } catch {
@@ -87,35 +70,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (parsedState.u !== user.id) {
-      return new Response(JSON.stringify({ error: "State user mismatch" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const storeId = parsedState.s;
     const dc = parsedState.d || "com";
     const accountsBase = ACCOUNTS_DOMAINS[dc] || ACCOUNTS_DOMAINS.com;
     const inventoryBase = INVENTORY_DOMAINS[dc] || INVENTORY_DOMAINS.com;
 
-    // Verificar ownership de la tienda
-    const { data: store } = await supabase
+    // Verificar que la tienda existe (usando service role)
+    const { data: store } = await adminClient
       .from("stores")
       .select("store_id")
       .eq("store_id", storeId)
-      .eq("user_id", user.id)
       .maybeSingle();
 
     if (!store) {
-      return new Response(JSON.stringify({ error: "Store not owned by user" }), {
-        status: 403,
+      return new Response(JSON.stringify({ error: "Store not found" }), {
+        status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Cliente con service role para escribir tokens (bypass RLS controlada)
-    const adminClient = createClient(supabaseUrl, serviceKey);
 
     // Caso 1: aún no se eligió organization → intercambiar code y devolver lista
     if (!organizationId) {
