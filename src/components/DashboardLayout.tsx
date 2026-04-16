@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { RefreshCw, LayoutDashboard, LogOut, Menu, User, Users } from 'lucide-react';
+import { RefreshCw, LayoutDashboard, Menu, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -9,14 +9,10 @@ interface DashboardLayoutProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
   onDisconnect: () => void;
-  onLogout?: () => void;
-  userEmail?: string;
-  isAdmin?: boolean;
 }
 
 const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'all' },
-  { id: 'users', label: 'Usuarios', icon: Users, permission: 'admin' },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
 ];
 
 export function DashboardLayout({ 
@@ -25,15 +21,8 @@ export function DashboardLayout({
   activeSection, 
   onSectionChange,
   onDisconnect,
-  onLogout,
-  userEmail,
-  isAdmin = false
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const visibleMenuItems = menuItems.filter(item => 
-    item.permission === 'all' || (item.permission === 'admin' && isAdmin)
-  );
 
   return (
     <div className="min-h-screen bg-secondary/40 flex">
@@ -62,7 +51,7 @@ export function DashboardLayout({
           </div>
 
           <nav className="flex-1 p-3 space-y-0.5">
-            {visibleMenuItems.map((item) => (
+            {menuItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => {
@@ -82,31 +71,14 @@ export function DashboardLayout({
             ))}
           </nav>
 
-          <div className="p-3 border-t border-border space-y-0.5">
-            {userEmail && (
-              <div className="flex items-center gap-2.5 px-3 py-2 text-xs text-muted-foreground">
-                <User className="w-3.5 h-3.5" />
-                <span className="truncate">{userEmail}</span>
-              </div>
-            )}
-            
+          <div className="p-3 border-t border-border">
             <button
               onClick={onDisconnect}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             >
-              <RefreshCw className="w-4 h-4" />
+              <LogOut className="w-4 h-4" />
               Desconectar Tienda
             </button>
-
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Cerrar Sesión
-              </button>
-            )}
           </div>
         </div>
       </aside>
