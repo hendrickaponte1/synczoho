@@ -10,7 +10,19 @@ interface ImportRequest {
     tiendanube_product_id?: number | null;
   }>;
   publish?: boolean; // si false (default), crea como borrador
+  fields?: Partial<Record<
+    "name" | "sku" | "description" | "price" | "stock" | "images" | "category" |
+    "weight" | "dimensions" | "barcode" | "brand" | "tax",
+    boolean
+  >>;
+  overwrite?: boolean; // si false, en update no pisa campos existentes
 }
+
+const DEFAULT_FIELDS = {
+  name: true, sku: true, description: true, price: true, stock: true,
+  images: false, category: false, weight: false, dimensions: false,
+  barcode: false, brand: false, tax: false,
+} as const;
 
 const TN_API_BASE = "https://api.tiendanube.com/v1";
 
@@ -20,7 +32,8 @@ Deno.serve(async (req) => {
   try {
     const admin = getAdminClient();
     const body = (await req.json().catch(() => ({}))) as ImportRequest;
-    const { store_id: storeId, items, publish = false } = body;
+    const { store_id: storeId, items, publish = false, fields, overwrite = true } = body;
+    const F = { ...DEFAULT_FIELDS, ...(fields || {}) };
 
     if (!storeId || !Array.isArray(items) || items.length === 0) {
       return json({ error: "store_id e items son obligatorios" }, 400);
@@ -58,18 +71,31 @@ Deno.serve(async (req) => {
         let tnProductId: number | null = entry.tiendanube_product_id || null;
 
         if (entry.action === "create") {
-          const payload = {
-            name: { es: zItem.name },
-            description: { es: zItem.description || "" },
-            published: publish,
-            variants: [
-              {
-                price: String(zItem.rate ?? 0),
-                stock: Number(zItem.stock_on_hand ?? 0),
-                sku: zItem.sku || undefined,
-              },
-            ],
-          };
+          const variant: Record<string, unknown> = {};
+          if (F.price) variant.price = String(zItem.rate ?? 0);
+          if (F.stock) variant.stock = Number(zItem.stock_on_hand ?? 0);
+          if (F.sku && zItem.sku) variant.sku = zItem.sku;
+          if (F.weight && zItem.weight != null) variant.weight = String(zItem.weight);
+          if (F.dimensions) {
+            if (zItem.length != null) variant.depth = String(zItem.length);
+            if (zItem.width != null) variant.width = String(zItem.width);
+            if (zItem.height != null) variant.height = String(zItem.height);
+          }
+          if (F.barcode && zItem.upc) variant.barcode = zItem.upc;
+
+          const payload: Record<string, unknown> = { published: publish };
+          if (F.name) payload.name = { es: zItem.name };
+          if (F.description) payload.description = { es: zItem.description || "" };
+          if (F.brand && zItem.brand) payload.brand = zItem.brand;
+          if (F.category && zItem.category_name) {
+            payload.categories = [{ name: { es: zItem.category_name } }];
+          }
+          if (F.images && Array.isArray(zItem.image_document_id ? [zItem.image_document_id] : zItem.images)) {
+            // Tiendanube espera URLs públicas; si Zoho devuelve image_url se podría usar acá.
+            if (zItem.image_url) payload.images = [{ src: zItem.image_url }];
+          }
+          payload.variants = [variant];
+
           const resp = await fetch(`${TN_API_BASE}/${storeId}/products`, {
             method: "POST",
             headers: tnHeaders(store.access_token),
@@ -80,17 +106,23 @@ Deno.serve(async (req) => {
           tnProductId = created.id;
         } else if (entry.action === "update") {
           if (!tnProductId) throw new Error("tiendanube_product_id requerido para update");
-          const payload = {
-            name: { es: zItem.name },
-            description: { es: zItem.description || "" },
-          };
-          const resp = await fetch(`${TN_API_BASE}/${storeId}/products/${tnProductId}`, {
-            method: "PUT",
-            headers: tnHeaders(store.access_token),
-            body: JSON.stringify(payload),
-          });
-          const updated = await resp.json();
-          if (!resp.ok) throw new Error(tnErr(updated, resp.status));
+          if (!overwrite) {
+            // No sobrescribir: nada que enviar, sólo refrescamos mapa abajo.
+          } else {
+            const payload: Record<string, unknown> = {};
+            if (F.name) payload.name = { es: zItem.name };
+            if (F.description) payload.description = { es: zItem.description || "" };
+            if (F.brand && zItem.brand) payload.brand = zItem.brand;
+            if (Object.keys(payload).length > 0) {
+              const resp = await fetch(`${TN_API_BASE}/${storeId}/products/${tnProductId}`, {
+                method: "PUT",
+                headers: tnHeaders(store.access_token),
+                body: JSON.stringify(payload),
+              });
+              const updated = await resp.json();
+              if (!resp.ok) throw new Error(tnErr(updated, resp.status));
+            }
+          }
         } else if (entry.action === "link") {
           if (!tnProductId) throw new Error("tiendanube_product_id requerido para link");
         }
