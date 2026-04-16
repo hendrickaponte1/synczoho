@@ -5,6 +5,7 @@ export interface AppSection {
   id: string;
   label: string;
   icon?: ReactNode;
+  disabled?: boolean;
 }
 
 interface AppShellProps {
@@ -41,13 +42,14 @@ export function AppShell({
           <Title as="h1" fontSize="h2">{activeLabel}</Title>
         </Box>
 
-        {/* Navegación entre módulos + acciones contextuales a la derecha */}
+        {/* Navegación + acciones contextuales a la derecha */}
         <Box display="flex" alignItems="center" gap="2" flexWrap="wrap" justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
           {sections.map((s) => (
             <Button
               key={s.id}
               appearance={activeSection === s.id ? 'primary' : 'neutral'}
               onClick={() => onSectionChange(s.id)}
+              disabled={s.disabled}
             >
               {s.icon}
               {s.label}

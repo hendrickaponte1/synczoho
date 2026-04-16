@@ -5,6 +5,7 @@ import {
 import { RedoIcon } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
+import { ProgressButton } from '@/components/ProgressButton';
 import { toast } from 'sonner';
 
 interface Props { storeId: string }
@@ -18,9 +19,12 @@ interface CustomerRow {
   last_synced_at: string | null;
 }
 
+const PAGE_SIZE = 50;
+
 export function SyncCustomersView({ storeId }: Props) {
   const { settings, save } = useSyncSettings(storeId);
   const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [history, setHistory] = useState<CustomerRow[]>([]);
   const [lastResult, setLastResult] = useState<{ created: number; linked: number; errors: number; total: number } | null>(null);
 
@@ -39,19 +43,38 @@ export function SyncCustomersView({ storeId }: Props) {
   const runBulk = async () => {
     setRunning(true);
     setLastResult(null);
+    let totalCreated = 0;
+    let totalLinked = 0;
+    let totalErrors = 0;
+    let totalProcessed = 0;
+    let page = 1;
+    setProgress({ current: 0, total: PAGE_SIZE });
     try {
-      const { data, error } = await supabase.functions.invoke('sync-customers-bulk', {
-        body: { storeId, page: 1, limit: 50 },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setLastResult({ created: data.created, linked: data.linked, errors: data.errors, total: data.total });
-      toast.success(`Sync clientes: ${data.created} creados, ${data.linked} vinculados, ${data.errors} errores`);
+      // Loop por páginas hasta que la API devuelva menos del PAGE_SIZE
+      while (true) {
+        const { data, error } = await supabase.functions.invoke('sync-customers-bulk', {
+          body: { storeId, page, limit: PAGE_SIZE },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        totalCreated += data.created || 0;
+        totalLinked += data.linked || 0;
+        totalErrors += data.errors || 0;
+        totalProcessed += data.total || 0;
+        setProgress({ current: totalProcessed, total: totalProcessed + (data.total === PAGE_SIZE ? PAGE_SIZE : 0) });
+
+        if (!data.total || data.total < PAGE_SIZE) break;
+        page++;
+      }
+      setLastResult({ created: totalCreated, linked: totalLinked, errors: totalErrors, total: totalProcessed });
+      toast.success(`Sincronización de clientes: ${totalCreated} creados, ${totalLinked} vinculados, ${totalErrors} errores`);
       await loadHistory();
     } catch (e: any) {
-      toast.error(e?.message || 'Error en sync de clientes');
+      toast.error(e?.message || 'Error en la sincronización de clientes');
     } finally {
       setRunning(false);
+      setProgress(null);
     }
   };
 
@@ -65,7 +88,7 @@ export function SyncCustomersView({ storeId }: Props) {
           {!settings ? <Spinner /> : (
             <Checkbox
               name="customers_auto_sync_on_order"
-              label="Crear/vincular cliente en Zoho automáticamente al recibir una orden"
+              label="Crear o vincular automáticamente el cliente en Zoho al recibir una orden"
               checked={settings.customers_auto_sync_on_order}
               onChange={(e) => save({ customers_auto_sync_on_order: e.target.checked })}
             />
@@ -77,15 +100,20 @@ export function SyncCustomersView({ storeId }: Props) {
         <Card.Header>
           <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
             <Title as="h4" fontSize="h5">Sincronización masiva</Title>
-            <Button appearance="primary" onClick={runBulk} disabled={running}>
-              {running ? <Spinner size="small" /> : <RedoIcon />}
+            <ProgressButton
+              onClick={runBulk}
+              loading={running}
+              progress={progress}
+              icon={<RedoIcon />}
+              loadingLabel="Sincronizando"
+            >
               Sincronizar clientes ahora
-            </Button>
+            </ProgressButton>
           </Box>
         </Card.Header>
         <Card.Body>
           <Text>
-            Trae los clientes de Tiendanube y los crea o vincula en Zoho Inventory por email.
+            Trae los clientes desde Tiendanube y los crea o vincula en Zoho Inventory utilizando el correo electrónico como identificador.
           </Text>
           {lastResult && (
             <Box marginTop="3" display="flex" gap="2" flexWrap="wrap">
@@ -109,10 +137,10 @@ export function SyncCustomersView({ storeId }: Props) {
             <Table>
               <Table.Head>
                 <Table.Row>
-                  <Table.Cell as="th">Email</Table.Cell>
+                  <Table.Cell as="th">Correo</Table.Cell>
                   <Table.Cell as="th">Estado</Table.Cell>
-                  <Table.Cell as="th">Zoho Contact ID</Table.Cell>
-                  <Table.Cell as="th">Último sync</Table.Cell>
+                  <Table.Cell as="th">ID de contacto en Zoho</Table.Cell>
+                  <Table.Cell as="th">Última sincronización</Table.Cell>
                 </Table.Row>
               </Table.Head>
               <Table.Body>

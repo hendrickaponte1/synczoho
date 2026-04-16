@@ -8,6 +8,21 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
+const DEFAULT_FIELDS = {
+  name: true,
+  sku: true,
+  description: true,
+  price: true,
+  stock: true,
+  images: false,
+  category: false,
+  weight: false,
+  dimensions: false,
+  barcode: false,
+  brand: false,
+  tax: false,
+};
+
 const DEFAULTS = {
   orders_enabled: true,
   orders_create_as_draft: true,
@@ -18,6 +33,10 @@ const DEFAULTS = {
   stock_priority: "zoho",
   stock_warehouse_id: null as string | null,
   customers_auto_sync_on_order: true,
+  products_publish_on_import: false,
+  products_overwrite_existing: true,
+  products_match_strategy: "sku",
+  products_sync_fields: DEFAULT_FIELDS,
 };
 
 Deno.serve(async (req) => {
@@ -42,16 +61,21 @@ Deno.serve(async (req) => {
     );
 
     if (action === "save" && settings) {
-      const merged = { ...DEFAULTS, ...settings, store_id: storeId };
+      // Sólo persistimos campos conocidos
+      const allowed = Object.keys(DEFAULTS);
+      const clean: Record<string, unknown> = { store_id: storeId };
+      for (const k of allowed) {
+        if (k in settings) clean[k] = (settings as any)[k];
+      }
       const { data: existing } = await admin
         .from("sync_settings")
         .select("id")
         .eq("store_id", storeId)
         .maybeSingle();
       if (existing) {
-        await admin.from("sync_settings").update(merged).eq("store_id", storeId);
+        await admin.from("sync_settings").update(clean).eq("store_id", storeId);
       } else {
-        await admin.from("sync_settings").insert(merged);
+        await admin.from("sync_settings").insert({ ...DEFAULTS, ...clean });
       }
     }
 

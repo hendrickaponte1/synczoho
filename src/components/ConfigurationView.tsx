@@ -16,7 +16,15 @@ export function ConfigurationView({ storeId, storeName, storeMeta, onDisconnect 
         <Card>
           <Card.Header>
             <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
-              <Title as="h4" fontSize="h5">Tiendanube</Title>
+              <Box display="flex" alignItems="center" gap="2">
+                <img
+                  src="/tiendanube-logo.png"
+                  alt="Tiendanube"
+                  style={{ height: 24, width: 'auto' }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+                <Title as="h4" fontSize="h5">Tiendanube</Title>
+              </Box>
               <Tag appearance="success">Conectada</Tag>
             </Box>
           </Card.Header>

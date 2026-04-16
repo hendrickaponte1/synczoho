@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Box, Card, Title, Text, Button, Checkbox, Tag, Spinner, Table, Alert, Pagination,
 } from '@nimbus-ds/components';
-import { RedoIcon, CheckCircleIcon, ExclamationTriangleIcon, ExternalLinkIcon } from '@nimbus-ds/icons';
+import { RedoIcon } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
 import { toast } from 'sonner';
@@ -44,7 +44,7 @@ export function SyncOrdersView({ storeId }: Props) {
       if (error) throw error;
       setOrders(data.orders || []);
     } catch (e: any) {
-      toast.error(e?.message || 'Error cargando órdenes');
+      toast.error(e?.message || 'Error al cargar las órdenes');
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export function SyncOrdersView({ storeId }: Props) {
       toast.success(`Orden #${orderId} sincronizada`);
       loadOrders(page);
     } catch (e: any) {
-      toast.error(e?.message || 'Error reintentando');
+      toast.error(e?.message || 'Error al reintentar la sincronización');
     } finally {
       setRetryingId(null);
     }
@@ -101,7 +101,7 @@ export function SyncOrdersView({ storeId }: Props) {
               />
               <Checkbox
                 name="orders_auto_confirm"
-                label="Auto-confirmar Sales Order al crearse"
+                label="Confirmar la orden de venta automáticamente al crearse"
                 checked={settings.orders_auto_confirm}
                 onChange={(e) => save({ orders_auto_confirm: e.target.checked, orders_create_as_draft: e.target.checked ? false : settings.orders_create_as_draft })}
               />
@@ -113,7 +113,7 @@ export function SyncOrdersView({ storeId }: Props) {
               />
               <Checkbox
                 name="customers_auto_sync_on_order"
-                label="Crear/vincular cliente en Zoho al recibir la orden"
+                label="Crear o vincular el cliente en Zoho al recibir la orden"
                 checked={settings.customers_auto_sync_on_order}
                 onChange={(e) => save({ customers_auto_sync_on_order: e.target.checked })}
               />
@@ -144,9 +144,9 @@ export function SyncOrdersView({ storeId }: Props) {
                   <Table.Row>
                     <Table.Cell as="th">#</Table.Cell>
                     <Table.Cell as="th">Cliente</Table.Cell>
-                    <Table.Cell as="th">Estado pago</Table.Cell>
+                    <Table.Cell as="th">Estado de pago</Table.Cell>
                     <Table.Cell as="th">Total</Table.Cell>
-                    <Table.Cell as="th">Sync Zoho</Table.Cell>
+                    <Table.Cell as="th">Sincronización Zoho</Table.Cell>
                     <Table.Cell as="th">Acción</Table.Cell>
                   </Table.Row>
                 </Table.Head>
@@ -198,7 +198,7 @@ export function SyncOrdersView({ storeId }: Props) {
 
       <Alert appearance="primary" title="Webhook de Tiendanube">
         <Text>
-          Para sincronización automática, registrá este webhook URL en tu app de Tiendanube
+          Para que las órdenes se sincronicen automáticamente, registra esta URL como webhook en tu app de Tiendanube
           (eventos: <code>order/created</code>, <code>order/updated</code>, <code>order/paid</code>):
         </Text>
         <Text fontSize="caption">
