@@ -104,6 +104,51 @@ export type Database = {
         }
         Relationships: []
       }
+      product_sync_map: {
+        Row: {
+          created_at: string
+          id: string
+          last_error: string | null
+          last_synced_at: string | null
+          metadata: Json | null
+          status: string
+          store_id: string
+          tiendanube_product_id: number | null
+          updated_at: string
+          zoho_item_id: string
+          zoho_name: string | null
+          zoho_sku: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          metadata?: Json | null
+          status?: string
+          store_id: string
+          tiendanube_product_id?: number | null
+          updated_at?: string
+          zoho_item_id: string
+          zoho_name?: string | null
+          zoho_sku?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          metadata?: Json | null
+          status?: string
+          store_id?: string
+          tiendanube_product_id?: number | null
+          updated_at?: string
+          zoho_item_id?: string
+          zoho_name?: string | null
+          zoho_sku?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           categories: Json | null
@@ -176,6 +221,45 @@ export type Database = {
           updated_at?: string
           user_email?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      sync_logs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          id: string
+          message: string | null
+          operation: string
+          payload: Json | null
+          status: string
+          store_id: string
+          tiendanube_product_id: number | null
+          zoho_item_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          message?: string | null
+          operation: string
+          payload?: Json | null
+          status: string
+          store_id: string
+          tiendanube_product_id?: number | null
+          zoho_item_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          message?: string | null
+          operation?: string
+          payload?: Json | null
+          status?: string
+          store_id?: string
+          tiendanube_product_id?: number | null
+          zoho_item_id?: string | null
         }
         Relationships: []
       }
