@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Box, Card, Title, Text, Button, Checkbox, Tag, Spinner, Table, Alert, Pagination,
 } from '@nimbus-ds/components';
-import { RedoIcon } from '@nimbus-ds/icons';
+import { RedoIcon, CogIcon, CashIcon, ChatDotsIcon } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
 import { toast } from 'sonner';
@@ -27,9 +27,11 @@ interface OrderRow {
 }
 
 const PER_PAGE = 25;
+type TabKey = 'config' | 'orders' | 'webhooks';
 
 export function SyncOrdersView({ storeId }: Props) {
   const { settings, saving, save } = useSyncSettings(storeId);
+  const [tab, setTab] = useState<TabKey>('config');
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -66,11 +68,8 @@ export function SyncOrdersView({ storeId }: Props) {
       if (data?.error) throw new Error(data.error);
       const created = data.created?.length || 0;
       const errors = data.errors?.length || 0;
-      if (errors === 0) {
-        toast.success(`Webhooks activados (${created} registrados)`);
-      } else {
-        toast.warning(`${created} registrados · ${errors} con error`);
-      }
+      if (errors === 0) toast.success(`Webhooks activados (${created} registrados)`);
+      else toast.warning(`${created} registrados · ${errors} con error`);
       await loadWebhooksStatus();
     } catch (e: any) {
       toast.error(e?.message || 'Error al registrar webhooks');
@@ -94,7 +93,15 @@ export function SyncOrdersView({ storeId }: Props) {
     }
   };
 
-  useEffect(() => { loadOrders(1); loadWebhooksStatus(); /* eslint-disable-next-line */ }, [storeId]);
+  useEffect(() => {
+    loadWebhooksStatus();
+    // eslint-disable-next-line
+  }, [storeId]);
+
+  useEffect(() => {
+    if (tab === 'orders' && orders.length === 0) loadOrders(1);
+    // eslint-disable-next-line
+  }, [tab]);
 
   const retryOrder = async (orderId: number) => {
     setRetryingId(orderId);
@@ -120,175 +127,229 @@ export function SyncOrdersView({ storeId }: Props) {
     return <Tag appearance="neutral">Sin sincronizar</Tag>;
   };
 
+  const TabBtn = ({ k, icon, label, badge }: { k: TabKey; icon: React.ReactNode; label: string; badge?: React.ReactNode }) => (
+    <button
+      onClick={() => setTab(k)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+        background: tab === k ? 'hsl(var(--primary) / 0.1)' : 'transparent',
+        color: tab === k ? 'hsl(var(--primary))' : 'hsl(var(--foreground))',
+        border: 'none', borderBottom: tab === k ? '2px solid hsl(var(--primary))' : '2px solid transparent',
+        cursor: 'pointer', fontWeight: 500, fontSize: 14,
+      }}
+    >
+      {icon}
+      <span>{label}</span>
+      {badge}
+    </button>
+  );
+
   return (
     <Box display="flex" flexDirection="column" gap="4">
-      <Card>
-        <Card.Header>
-          <Title as="h4" fontSize="h5">Configuración de órdenes</Title>
-        </Card.Header>
-        <Card.Body>
-          {!settings ? (
-            <Spinner />
-          ) : (
-            <Box display="flex" flexDirection="column" gap="3">
-              <Checkbox
-                name="orders_enabled"
-                label="Activar sincronización automática de órdenes (vía webhook)"
-                checked={settings.orders_enabled}
-                onChange={(e) => save({ orders_enabled: e.target.checked })}
-              />
-              <Checkbox
-                name="orders_create_as_draft"
-                label="Crear órdenes en Zoho como borrador (Draft)"
-                checked={settings.orders_create_as_draft}
-                onChange={(e) => save({ orders_create_as_draft: e.target.checked, orders_auto_confirm: e.target.checked ? false : settings.orders_auto_confirm })}
-              />
-              <Checkbox
-                name="orders_auto_confirm"
-                label="Confirmar la orden de venta automáticamente al crearse"
-                checked={settings.orders_auto_confirm}
-                onChange={(e) => save({ orders_auto_confirm: e.target.checked, orders_create_as_draft: e.target.checked ? false : settings.orders_create_as_draft })}
-              />
-              <Checkbox
-                name="orders_generate_invoice_on_paid"
-                label="Generar factura automáticamente cuando la orden esté pagada"
-                checked={settings.orders_generate_invoice_on_paid}
-                onChange={(e) => save({ orders_generate_invoice_on_paid: e.target.checked })}
-              />
-              <Checkbox
-                name="customers_auto_sync_on_order"
-                label="Crear o vincular el cliente en Zoho al recibir la orden"
-                checked={settings.customers_auto_sync_on_order}
-                onChange={(e) => save({ customers_auto_sync_on_order: e.target.checked })}
-              />
-              {saving && <Text fontSize="caption" color="neutral-textLow">Guardando…</Text>}
-            </Box>
-          )}
-        </Card.Body>
-      </Card>
+      <Box
+        display="flex"
+        gap="1"
+        borderBottomWidth="1"
+        borderStyle="solid"
+        borderColor="neutral-surfaceHighlight"
+      >
+        <TabBtn k="config" icon={<CogIcon />} label="Configuración" />
+        <TabBtn k="orders" icon={<CashIcon />} label="Órdenes recientes" />
+        <TabBtn
+          k="webhooks"
+          icon={<ChatDotsIcon />}
+          label="Webhooks"
+          badge={
+            webhooksStatus
+              ? <Tag appearance={webhooksStatus.all_active ? 'success' : 'danger'}>
+                  {webhooksStatus.all_active ? 'OK' : `${webhooksStatus.missing.length}`}
+                </Tag>
+              : null
+          }
+        />
+      </Box>
 
-      <Card>
-        <Card.Header>
-          <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
-            <Title as="h4" fontSize="h5">Órdenes recientes</Title>
-            <Button appearance="neutral" onClick={() => loadOrders(page)}>
-              <RedoIcon /> Actualizar
-            </Button>
-          </Box>
-        </Card.Header>
-        <Card.Body>
-          {loading ? (
-            <Box display="flex" justifyContent="center" padding="6"><Spinner /></Box>
-          ) : orders.length === 0 ? (
-            <Alert appearance="neutral">No hay órdenes para mostrar.</Alert>
-          ) : (
-            <Box display="flex" flexDirection="column" gap="3">
-              <Table>
-                <Table.Head>
-                  <Table.Row>
-                    <Table.Cell as="th">#</Table.Cell>
-                    <Table.Cell as="th">Cliente</Table.Cell>
-                    <Table.Cell as="th">Estado de pago</Table.Cell>
-                    <Table.Cell as="th">Total</Table.Cell>
-                    <Table.Cell as="th">Sincronización Zoho</Table.Cell>
-                    <Table.Cell as="th">Acción</Table.Cell>
-                  </Table.Row>
-                </Table.Head>
-                <Table.Body>
-                  {orders.map((o) => (
-                    <Table.Row key={o.id}>
-                      <Table.Cell>#{o.number}</Table.Cell>
-                      <Table.Cell>
-                        <Text>{o.contact_name || '—'}</Text>
-                        <Text fontSize="caption" color="neutral-textLow">{o.contact_email}</Text>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Tag appearance={o.payment_status === 'paid' ? 'success' : 'warning'}>
-                          {o.payment_status}
-                        </Tag>
-                      </Table.Cell>
-                      <Table.Cell>{o.currency} {o.total}</Table.Cell>
-                      <Table.Cell>
-                        {syncStatusTag(o.sync_status)}
-                        {o.last_error && (
-                          <Text fontSize="caption" color="danger-textLow">{o.last_error.slice(0, 80)}</Text>
-                        )}
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Button
-                          appearance="neutral"
-                          onClick={() => retryOrder(o.id)}
-                          disabled={retryingId === o.id}
-                        >
-                          {retryingId === o.id ? <Spinner size="small" /> : <RedoIcon />}
-                          {o.sync_status === 'success' ? 'Re-sincronizar' : 'Sincronizar'}
-                        </Button>
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
-                </Table.Body>
-              </Table>
-              <Box display="flex" justifyContent="center">
-                <Pagination
-                  pageCount={page + 1}
-                  activePage={page}
-                  onPageChange={(p) => { setPage(p); loadOrders(p); }}
+      {tab === 'config' && (
+        <Card>
+          <Card.Header>
+            <Title as="h4" fontSize="h5">Configuración de órdenes</Title>
+          </Card.Header>
+          <Card.Body>
+            {!settings ? <Spinner /> : (
+              <Box display="flex" flexDirection="column" gap="3">
+                <Checkbox
+                  name="orders_enabled"
+                  label="Activar sincronización automática de órdenes (vía webhook)"
+                  checked={settings.orders_enabled}
+                  onChange={(e) => save({ orders_enabled: e.target.checked })}
                 />
+                <Checkbox
+                  name="orders_only_paid"
+                  label="Sincronizar solo órdenes con pago confirmado (estado: pagada)"
+                  checked={settings.orders_only_paid}
+                  onChange={(e) => save({ orders_only_paid: e.target.checked })}
+                />
+                <Checkbox
+                  name="orders_create_as_draft"
+                  label="Crear órdenes en Zoho como borrador (Draft)"
+                  checked={settings.orders_create_as_draft}
+                  onChange={(e) => save({
+                    orders_create_as_draft: e.target.checked,
+                    orders_auto_confirm: e.target.checked ? false : settings.orders_auto_confirm,
+                  })}
+                />
+                <Checkbox
+                  name="orders_auto_confirm"
+                  label="Confirmar la orden de venta automáticamente al crearse"
+                  checked={settings.orders_auto_confirm}
+                  onChange={(e) => save({
+                    orders_auto_confirm: e.target.checked,
+                    orders_create_as_draft: e.target.checked ? false : settings.orders_create_as_draft,
+                  })}
+                />
+                <Checkbox
+                  name="orders_generate_invoice_on_paid"
+                  label="Generar factura automáticamente cuando la orden esté pagada"
+                  checked={settings.orders_generate_invoice_on_paid}
+                  onChange={(e) => save({ orders_generate_invoice_on_paid: e.target.checked })}
+                />
+                <Checkbox
+                  name="customers_auto_sync_on_order"
+                  label="Crear o vincular el cliente en Zoho al recibir la orden"
+                  checked={settings.customers_auto_sync_on_order}
+                  onChange={(e) => save({ customers_auto_sync_on_order: e.target.checked })}
+                />
+                {saving && <Text fontSize="caption" color="neutral-textLow">Guardando…</Text>}
               </Box>
-            </Box>
-          )}
-        </Card.Body>
-      </Card>
+            )}
+          </Card.Body>
+        </Card>
+      )}
 
-      <Card>
-        <Card.Header>
-          <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
-            <Title as="h4" fontSize="h5">Webhooks de Tiendanube</Title>
-            <Box display="flex" gap="2">
-              <Button appearance="neutral" onClick={loadWebhooksStatus} disabled={webhooksLoading}>
-                {webhooksLoading ? <Spinner size="small" /> : <RedoIcon />}
-                Verificar estado
+      {tab === 'orders' && (
+        <Card>
+          <Card.Header>
+            <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
+              <Title as="h4" fontSize="h5">Órdenes recientes</Title>
+              <Button appearance="neutral" onClick={() => loadOrders(page)}>
+                <RedoIcon /> Actualizar
               </Button>
-              {webhooksStatus && !webhooksStatus.all_active && (
-                <Button appearance="primary" onClick={registerWebhooks} disabled={registeringWebhooks}>
-                  {registeringWebhooks ? <Spinner size="small" /> : null}
-                  Activar webhooks
-                </Button>
-              )}
             </Box>
-          </Box>
-        </Card.Header>
-        <Card.Body>
-          {!webhooksStatus ? (
-            <Spinner />
-          ) : webhooksStatus.all_active ? (
-            <Alert appearance="success" title="Webhooks activos">
-              <Text>
-                Todos los eventos requeridos están registrados. Las nuevas órdenes se sincronizarán automáticamente con Zoho Inventory.
-              </Text>
-              <Box marginTop="2" display="flex" gap="1" flexWrap="wrap">
-                {webhooksStatus.registered.map((w: any) => (
-                  <Tag key={w.id} appearance="success">{w.event}</Tag>
-                ))}
+          </Card.Header>
+          <Card.Body>
+            {loading ? (
+              <Box display="flex" justifyContent="center" padding="6"><Spinner /></Box>
+            ) : orders.length === 0 ? (
+              <Alert appearance="neutral">No hay órdenes para mostrar.</Alert>
+            ) : (
+              <Box display="flex" flexDirection="column" gap="3">
+                <Table>
+                  <Table.Head>
+                    <Table.Row>
+                      <Table.Cell as="th">#</Table.Cell>
+                      <Table.Cell as="th">Cliente</Table.Cell>
+                      <Table.Cell as="th">Estado de pago</Table.Cell>
+                      <Table.Cell as="th">Total</Table.Cell>
+                      <Table.Cell as="th">Sincronización Zoho</Table.Cell>
+                      <Table.Cell as="th">Acción</Table.Cell>
+                    </Table.Row>
+                  </Table.Head>
+                  <Table.Body>
+                    {orders.map((o) => (
+                      <Table.Row key={o.id}>
+                        <Table.Cell>#{o.number}</Table.Cell>
+                        <Table.Cell>
+                          <Text>{o.contact_name || '—'}</Text>
+                          <Text fontSize="caption" color="neutral-textLow">{o.contact_email}</Text>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Tag appearance={o.payment_status === 'paid' ? 'success' : 'warning'}>
+                            {o.payment_status}
+                          </Tag>
+                        </Table.Cell>
+                        <Table.Cell>{o.currency} {o.total}</Table.Cell>
+                        <Table.Cell>
+                          {syncStatusTag(o.sync_status)}
+                          {o.last_error && (
+                            <Text fontSize="caption" color="danger-textLow">{o.last_error.slice(0, 80)}</Text>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Button
+                            appearance="neutral"
+                            onClick={() => retryOrder(o.id)}
+                            disabled={retryingId === o.id}
+                          >
+                            {retryingId === o.id ? <Spinner size="small" /> : <RedoIcon />}
+                            {o.sync_status === 'success' ? 'Re-sincronizar' : 'Sincronizar'}
+                          </Button>
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table>
+                <Box display="flex" justifyContent="center">
+                  <Pagination
+                    pageCount={page + 1}
+                    activePage={page}
+                    onPageChange={(p) => { setPage(p); loadOrders(p); }}
+                  />
+                </Box>
               </Box>
-            </Alert>
-          ) : (
-            <Alert appearance="warning" title="Faltan webhooks por registrar">
-              <Text>
-                Las órdenes nuevas no se están sincronizando automáticamente. Presione "Activar webhooks" para registrarlos.
-              </Text>
-              <Box marginTop="2" display="flex" gap="1" flexWrap="wrap">
-                {webhooksStatus.registered.map((w: any) => (
-                  <Tag key={w.id} appearance="success">{w.event}</Tag>
-                ))}
-                {webhooksStatus.missing.map((e: string) => (
-                  <Tag key={e} appearance="danger">Falta: {e}</Tag>
-                ))}
+            )}
+          </Card.Body>
+        </Card>
+      )}
+
+      {tab === 'webhooks' && (
+        <Card>
+          <Card.Header>
+            <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
+              <Title as="h4" fontSize="h5">Webhooks de Tiendanube</Title>
+              <Box display="flex" gap="2">
+                <Button appearance="neutral" onClick={loadWebhooksStatus} disabled={webhooksLoading}>
+                  {webhooksLoading ? <Spinner size="small" /> : <RedoIcon />}
+                  Verificar estado
+                </Button>
+                {webhooksStatus && !webhooksStatus.all_active && (
+                  <Button appearance="primary" onClick={registerWebhooks} disabled={registeringWebhooks}>
+                    {registeringWebhooks ? <Spinner size="small" /> : null}
+                    Activar webhooks
+                  </Button>
+                )}
               </Box>
-            </Alert>
-          )}
-        </Card.Body>
-      </Card>
+            </Box>
+          </Card.Header>
+          <Card.Body>
+            {!webhooksStatus ? <Spinner /> : webhooksStatus.all_active ? (
+              <Alert appearance="success" title="Webhooks activos">
+                <Text>
+                  Todos los eventos requeridos están registrados. Las nuevas órdenes se sincronizarán automáticamente con Zoho Inventory.
+                </Text>
+                <Box marginTop="2" display="flex" gap="1" flexWrap="wrap">
+                  {webhooksStatus.registered.map((w: any) => (
+                    <Tag key={w.id} appearance="success">{w.event}</Tag>
+                  ))}
+                </Box>
+              </Alert>
+            ) : (
+              <Alert appearance="warning" title="Faltan webhooks por registrar">
+                <Text>
+                  Las órdenes nuevas no se están sincronizando automáticamente. Presione "Activar webhooks" para registrarlos.
+                </Text>
+                <Box marginTop="2" display="flex" gap="1" flexWrap="wrap">
+                  {webhooksStatus.registered.map((w: any) => (
+                    <Tag key={w.id} appearance="success">{w.event}</Tag>
+                  ))}
+                  {webhooksStatus.missing.map((e: string) => (
+                    <Tag key={e} appearance="danger">Falta: {e}</Tag>
+                  ))}
+                </Box>
+              </Alert>
+            )}
+          </Card.Body>
+        </Card>
+      )}
     </Box>
   );
 }
