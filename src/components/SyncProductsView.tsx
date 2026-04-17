@@ -30,6 +30,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings, type ProductSyncFields } from '@/hooks/useSyncSettings';
 import { ProgressButton } from '@/components/ProgressButton';
+import { FieldHelp } from '@/components/FieldHelp';
 import { toast } from 'sonner';
 
 interface ZohoItem {
@@ -236,6 +237,21 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
     tax: 'Impuestos',
   };
 
+  const FIELD_HELP: Record<keyof ProductSyncFields, string> = {
+    name: 'Nombre comercial del producto que se mostrará en Tiendanube. Si lo desactiva, se conservará el nombre actual en Tiendanube al re-sincronizar.',
+    sku: 'Código único de identificación del producto. Es la clave principal para vincular productos entre Zoho y Tiendanube. Se recomienda mantenerlo activo.',
+    description: 'Descripción larga del producto (acepta HTML). Útil si redacta las descripciones en Zoho. Desactívelo si prefiere editarlas directamente en Tiendanube.',
+    price: 'Precio de venta del producto. Si lo activa, los cambios de precio en Zoho se reflejarán en Tiendanube. Cuidado: puede sobrescribir promociones definidas en Tiendanube.',
+    stock: 'Cantidad inicial de unidades disponibles al crear el producto. Para mantener el inventario sincronizado en el tiempo, use además el módulo de Stock.',
+    images: 'Galería de imágenes del producto. Se descargarán desde Zoho y se subirán a Tiendanube. Aumenta significativamente el tiempo de importación.',
+    category: 'Categoría asignada al producto. Si la categoría no existe en Tiendanube, se creará automáticamente.',
+    weight: 'Peso del producto en gramos. Se utiliza para calcular costos de envío en Tiendanube.',
+    dimensions: 'Alto, ancho y profundidad del producto. Se utilizan para calcular costos de envío con transportistas.',
+    barcode: 'Código de barras (EAN, UPC, etc.) que identifica el producto físicamente. Útil para integraciones con lectores y depósitos.',
+    brand: 'Marca o fabricante del producto. Aparece como filtro en la tienda online y ayuda al SEO.',
+    tax: 'Configuración de impuestos del producto (IVA, etc.). Si está activo, se intentará mapear el impuesto de Zoho al equivalente en Tiendanube.',
+  };
+
   const toggleField = (key: keyof ProductSyncFields, value: boolean) => {
     if (!settings) return;
     save({ products_sync_fields: { ...settings.products_sync_fields, [key]: value } });
@@ -257,22 +273,31 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
           ) : (
             <Box display="flex" flexDirection="column" gap="4">
               <Box display="flex" flexDirection="column" gap="2">
-                <Checkbox
-                  name="products_publish_on_import"
-                  label="Publicar productos al importar (por defecto se crean como borrador)"
-                  checked={settings.products_publish_on_import}
-                  onChange={(e) => save({ products_publish_on_import: e.target.checked })}
-                />
-                <Checkbox
-                  name="products_overwrite_existing"
-                  label="Sobrescribir datos en productos ya vinculados al re-sincronizar"
-                  checked={settings.products_overwrite_existing}
-                  onChange={(e) => save({ products_overwrite_existing: e.target.checked })}
-                />
+                <Box display="flex" alignItems="center" gap="2">
+                  <Checkbox
+                    name="products_publish_on_import"
+                    label="Publicar productos al importar (por defecto se crean como borrador)"
+                    checked={settings.products_publish_on_import}
+                    onChange={(e) => save({ products_publish_on_import: e.target.checked })}
+                  />
+                  <FieldHelp help="Si está activo, los productos importados desde Zoho se crearán visibles y a la venta en Tiendanube. Si lo deja desactivado, se crearán como borrador para que pueda revisarlos (precios, fotos, descripciones) antes de publicarlos manualmente." />
+                </Box>
+                <Box display="flex" alignItems="center" gap="2">
+                  <Checkbox
+                    name="products_overwrite_existing"
+                    label="Sobrescribir datos en productos ya vinculados al re-sincronizar"
+                    checked={settings.products_overwrite_existing}
+                    onChange={(e) => save({ products_overwrite_existing: e.target.checked })}
+                  />
+                  <FieldHelp help="Cuando re-sincroniza un producto que ya está vinculado, esta opción decide si los datos de Zoho reemplazan a los de Tiendanube. Actívelo si Zoho es su fuente de verdad. Desactívelo para preservar las ediciones manuales hechas en Tiendanube (descripciones personalizadas, fotos retocadas, etc.)." />
+                </Box>
               </Box>
 
               <Box display="flex" flexDirection="column" gap="1">
-                <Text fontWeight="medium">Estrategia de coincidencia</Text>
+                <Box display="flex" alignItems="center" gap="2">
+                  <Text fontWeight="medium">Estrategia de coincidencia</Text>
+                  <FieldHelp help="Define cómo el sistema detecta si un producto de Zoho ya existe en Tiendanube para vincularlos automáticamente. 'Por SKU' es el más confiable porque el SKU es único. 'Por nombre' puede ser útil si no usa SKU, pero puede generar falsos positivos con productos de nombre similar." />
+                </Box>
                 <Text fontSize="caption" color="neutral-textLow">
                   Cómo se detecta si un producto de Zoho ya existe en Tiendanube.
                 </Text>
@@ -288,19 +313,24 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
               </Box>
 
               <Box display="flex" flexDirection="column" gap="2">
-                <Text fontWeight="medium">Campos a sincronizar desde Zoho</Text>
+                <Box display="flex" alignItems="center" gap="2">
+                  <Text fontWeight="medium">Campos a sincronizar desde Zoho</Text>
+                  <FieldHelp help="Marque solo los campos que quiere traer o actualizar desde Zoho. Los campos no marcados serán ignorados durante la sincronización, preservando los valores existentes en Tiendanube. Útil cuando, por ejemplo, gestiona los precios en Zoho pero las imágenes y descripciones se editan en Tiendanube." />
+                </Box>
                 <Text fontSize="caption" color="neutral-textLow">
                   Selecciona qué información de cada producto debe traerse o actualizarse.
                 </Text>
                 <Box display="grid" gap="2" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr', lg: 'repeat(3, 1fr)' }}>
                   {(Object.keys(FIELD_LABELS) as Array<keyof ProductSyncFields>).map((key) => (
-                    <Checkbox
-                      key={key}
-                      name={`field_${key}`}
-                      label={FIELD_LABELS[key]}
-                      checked={!!settings.products_sync_fields?.[key]}
-                      onChange={(e) => toggleField(key, e.target.checked)}
-                    />
+                    <Box key={key} display="flex" alignItems="center" gap="1">
+                      <Checkbox
+                        name={`field_${key}`}
+                        label={FIELD_LABELS[key]}
+                        checked={!!settings.products_sync_fields?.[key]}
+                        onChange={(e) => toggleField(key, e.target.checked)}
+                      />
+                      <FieldHelp help={FIELD_HELP[key]} />
+                    </Box>
                   ))}
                 </Box>
               </Box>
