@@ -143,9 +143,22 @@ Deno.serve(async (req) => {
         else target = priority === "zoho" ? "tn" : "zoho";
 
         if (target === "tn") {
+          // TN ignora `stock` si la variante no tiene stock_management = true.
+          // Lo forzamos primero (idempotente) y luego seteamos el stock.
+          const enableMgmt = await tnFetch(store, `/products/${p.tn_product_id}/variants/${p.tn_variant_id}`, {
+            method: "PUT",
+            body: JSON.stringify({ stock_management: true }),
+          });
+          if (!enableMgmt.ok && enableMgmt.status !== 422) {
+            const t = await enableMgmt.text();
+            throw new Error(`TN enable stock_management ${enableMgmt.status}: ${t.slice(0, 150)}`);
+          } else {
+            await enableMgmt.text().catch(() => "");
+          }
+
           const r = await tnFetch(store, `/products/${p.tn_product_id}/variants/${p.tn_variant_id}`, {
             method: "PUT",
-            body: JSON.stringify({ stock: p.zoho_qty }),
+            body: JSON.stringify({ stock: p.zoho_qty, stock_management: true }),
           });
           const txt = await r.text();
           if (!r.ok) throw new Error(`TN update ${r.status}: ${txt.slice(0, 150)}`);

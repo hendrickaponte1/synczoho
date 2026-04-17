@@ -1,6 +1,7 @@
 // Importa items de Zoho a Tiendanube. Procesa de a uno y devuelve resultado por item.
 // Soporta acciones: 'create' (crear nuevo), 'update' (actualizar vinculado), 'link' (solo vincular sin enviar).
-import { corsHeaders, getAdminClient, getZohoConnection, logSync, zohoFetch } from "../_shared/zoho.ts";
+import { corsHeaders, getAdminClient, getZohoConnection, getValidAccessToken, INVENTORY_DOMAINS, logSync, zohoFetch } from "../_shared/zoho.ts";
+import { encodeBase64 } from "https://deno.land/std@0.208.0/encoding/base64.ts";
 
 interface ImportRequest {
   store_id: string;
@@ -90,9 +91,9 @@ Deno.serve(async (req) => {
           if (F.category && zItem.category_name) {
             payload.categories = [{ name: { es: zItem.category_name } }];
           }
-          if (F.images && Array.isArray(zItem.image_document_id ? [zItem.image_document_id] : zItem.images)) {
-            // Tiendanube espera URLs públicas; si Zoho devuelve image_url se podría usar acá.
-            if (zItem.image_url) payload.images = [{ src: zItem.image_url }];
+          if (F.images) {
+            const imgs = await fetchZohoItemImages(admin, conn, entry.zoho_item_id, zItem);
+            if (imgs.length > 0) payload.images = imgs;
           }
           payload.variants = [variant];
 
@@ -121,6 +122,17 @@ Deno.serve(async (req) => {
               });
               const updated = await resp.json();
               if (!resp.ok) throw new Error(tnErr(updated, resp.status));
+            }
+            // Imágenes: agregamos las nuevas (TN no tiene "replace all" simple)
+            if (F.images) {
+              const imgs = await fetchZohoItemImages(admin, conn, entry.zoho_item_id, zItem);
+              for (const img of imgs) {
+                await fetch(`${TN_API_BASE}/${storeId}/products/${tnProductId}/images`, {
+                  method: "POST",
+                  headers: tnHeaders(store.access_token),
+                  body: JSON.stringify(img),
+                }).catch(() => {});
+              }
             }
           }
         } else if (entry.action === "link") {
@@ -218,4 +230,39 @@ function json(payload: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+// Descarga la imagen del item desde Zoho (autenticada con OAuth) y la devuelve
+// como attachment base64 listo para enviar a Tiendanube. TN no puede descargar
+// directamente la imagen de Zoho porque está protegida.
+async function fetchZohoItemImages(
+  admin: any,
+  conn: any,
+  zohoItemId: string,
+  zItem: any,
+): Promise<Array<{ attachment: string; filename: string; position?: number }>> {
+  const out: Array<{ attachment: string; filename: string; position?: number }> = [];
+  try {
+    if (!zItem?.image_document_id && !zItem?.image_name) {
+      return out;
+    }
+    const token = await getValidAccessToken(admin, conn);
+    const inventoryBase = INVENTORY_DOMAINS[conn.dc] || INVENTORY_DOMAINS.com;
+    const url = `${inventoryBase}/inventory/v1/items/${zohoItemId}/image?organization_id=${conn.organization_id}`;
+    const r = await fetch(url, {
+      headers: { Authorization: `Zoho-oauthtoken ${token}` },
+    });
+    if (!r.ok) return out;
+    const buf = new Uint8Array(await r.arrayBuffer());
+    if (buf.byteLength === 0) return out;
+    const filename = (zItem.image_name || `zoho-${zohoItemId}.jpg`).replace(/[^\w.\-]/g, "_");
+    out.push({
+      attachment: encodeBase64(buf),
+      filename,
+      position: 1,
+    });
+  } catch (e) {
+    console.error("fetchZohoItemImages error", e);
+  }
+  return out;
 }
