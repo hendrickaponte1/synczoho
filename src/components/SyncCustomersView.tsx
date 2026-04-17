@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  Box, Card, Title, Text, Button, Spinner, Alert, Tag, Table, Checkbox,
+  Box, Card, Title, Text, Spinner, Alert, Tag, Table, Checkbox,
 } from '@nimbus-ds/components';
 import { RedoIcon } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,8 +25,11 @@ export function SyncCustomersView({ storeId }: Props) {
   const { settings, save } = useSyncSettings(storeId);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
+  const [skipExisting, setSkipExisting] = useState(true);
   const [history, setHistory] = useState<CustomerRow[]>([]);
-  const [lastResult, setLastResult] = useState<{ created: number; linked: number; errors: number; total: number } | null>(null);
+  const [lastResult, setLastResult] = useState<{
+    created: number; linked: number; skipped: number; errors: number; total: number;
+  } | null>(null);
 
   const loadHistory = async () => {
     const { data } = await supabase
@@ -45,30 +48,49 @@ export function SyncCustomersView({ storeId }: Props) {
     setLastResult(null);
     let totalCreated = 0;
     let totalLinked = 0;
+    let totalSkipped = 0;
     let totalErrors = 0;
     let totalProcessed = 0;
     let page = 1;
-    setProgress({ current: 0, total: PAGE_SIZE });
+    let knownTotal = 0;
+    setProgress({ current: 0, total: 0 });
     try {
-      // Loop por páginas hasta que la API devuelva menos del PAGE_SIZE
       while (true) {
         const { data, error } = await supabase.functions.invoke('sync-customers-bulk', {
-          body: { storeId, page, limit: PAGE_SIZE },
+          body: { storeId, page, limit: PAGE_SIZE, skipExisting },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
 
+        // En la primera página obtenemos el total real desde el header de TN
+        if (page === 1 && data.total_count > 0) {
+          knownTotal = data.total_count;
+        }
+
         totalCreated += data.created || 0;
         totalLinked += data.linked || 0;
+        totalSkipped += data.skipped || 0;
         totalErrors += data.errors || 0;
         totalProcessed += data.total || 0;
-        setProgress({ current: totalProcessed, total: totalProcessed + (data.total === PAGE_SIZE ? PAGE_SIZE : 0) });
+
+        setProgress({
+          current: totalProcessed,
+          total: knownTotal || totalProcessed,
+        });
 
         if (!data.total || data.total < PAGE_SIZE) break;
         page++;
       }
-      setLastResult({ created: totalCreated, linked: totalLinked, errors: totalErrors, total: totalProcessed });
-      toast.success(`Sincronización de clientes: ${totalCreated} creados, ${totalLinked} vinculados, ${totalErrors} errores`);
+      setLastResult({
+        created: totalCreated,
+        linked: totalLinked,
+        skipped: totalSkipped,
+        errors: totalErrors,
+        total: totalProcessed,
+      });
+      toast.success(
+        `Clientes: ${totalCreated} creados · ${totalLinked} vinculados · ${totalSkipped} omitidos · ${totalErrors} errores`,
+      );
       await loadHistory();
     } catch (e: any) {
       toast.error(e?.message || 'Error en la sincronización de clientes');
@@ -86,12 +108,20 @@ export function SyncCustomersView({ storeId }: Props) {
         </Card.Header>
         <Card.Body>
           {!settings ? <Spinner /> : (
-            <Checkbox
-              name="customers_auto_sync_on_order"
-              label="Crear o vincular automáticamente el cliente en Zoho al recibir una orden"
-              checked={settings.customers_auto_sync_on_order}
-              onChange={(e) => save({ customers_auto_sync_on_order: e.target.checked })}
-            />
+            <Box display="flex" flexDirection="column" gap="3">
+              <Checkbox
+                name="customers_auto_sync_on_order"
+                label="Crear o vincular automáticamente el cliente en Zoho al recibir una orden"
+                checked={settings.customers_auto_sync_on_order}
+                onChange={(e) => save({ customers_auto_sync_on_order: e.target.checked })}
+              />
+              <Checkbox
+                name="skipExisting"
+                label="Omitir clientes ya sincronizados (recomendado para ahorrar recursos)"
+                checked={skipExisting}
+                onChange={(e) => setSkipExisting(e.target.checked)}
+              />
+            </Box>
           )}
         </Card.Body>
       </Card>
@@ -114,12 +144,14 @@ export function SyncCustomersView({ storeId }: Props) {
         <Card.Body>
           <Text>
             Trae los clientes desde Tiendanube y los crea o vincula en Zoho Inventory utilizando el correo electrónico como identificador.
+            {skipExisting && ' Los clientes ya sincronizados se omiten automáticamente.'}
           </Text>
           {lastResult && (
             <Box marginTop="3" display="flex" gap="2" flexWrap="wrap">
-              <Tag appearance="primary">Total: {lastResult.total}</Tag>
+              <Tag appearance="primary">Total procesados: {lastResult.total}</Tag>
               <Tag appearance="success">Creados: {lastResult.created}</Tag>
               <Tag appearance="primary">Vinculados: {lastResult.linked}</Tag>
+              <Tag appearance="neutral">Omitidos: {lastResult.skipped}</Tag>
               <Tag appearance={lastResult.errors > 0 ? 'danger' : 'neutral'}>Errores: {lastResult.errors}</Tag>
             </Box>
           )}

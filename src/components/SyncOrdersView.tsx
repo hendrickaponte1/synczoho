@@ -34,6 +34,50 @@ export function SyncOrdersView({ storeId }: Props) {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [retryingId, setRetryingId] = useState<number | null>(null);
+  const [webhooksStatus, setWebhooksStatus] = useState<{
+    all_active: boolean; missing: string[]; registered: any[]; webhook_url: string;
+  } | null>(null);
+  const [webhooksLoading, setWebhooksLoading] = useState(false);
+  const [registeringWebhooks, setRegisteringWebhooks] = useState(false);
+
+  const loadWebhooksStatus = async () => {
+    setWebhooksLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('tiendanube-webhooks-manage', {
+        body: { storeId, action: 'list' },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setWebhooksStatus(data);
+    } catch (e: any) {
+      toast.error(e?.message || 'No se pudo verificar el estado de los webhooks');
+    } finally {
+      setWebhooksLoading(false);
+    }
+  };
+
+  const registerWebhooks = async () => {
+    setRegisteringWebhooks(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('tiendanube-webhooks-manage', {
+        body: { storeId, action: 'register' },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const created = data.created?.length || 0;
+      const errors = data.errors?.length || 0;
+      if (errors === 0) {
+        toast.success(`Webhooks activados (${created} registrados)`);
+      } else {
+        toast.warning(`${created} registrados · ${errors} con error`);
+      }
+      await loadWebhooksStatus();
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al registrar webhooks');
+    } finally {
+      setRegisteringWebhooks(false);
+    }
+  };
 
   const loadOrders = async (p = page) => {
     setLoading(true);
