@@ -22,6 +22,7 @@ export interface SyncSettings {
   orders_create_as_draft: boolean;
   orders_auto_confirm: boolean;
   orders_generate_invoice_on_paid: boolean;
+  orders_only_paid: boolean;
   stock_enabled: boolean;
   stock_direction: 'zoho_to_tn' | 'tn_to_zoho' | 'bidirectional';
   stock_priority: 'zoho' | 'tiendanube';
