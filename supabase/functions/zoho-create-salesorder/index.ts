@@ -188,7 +188,8 @@ Deno.serve(async (req) => {
     };
 
     let salesorderId = existingMap?.zoho_salesorder_id || null;
-    let invoiceId: string | null = null;
+    let invoiceId: string | null = (existingMap as any)?.zoho_invoice_id || null;
+    const isPaid = order.payment_status === "paid" || event === "order/paid";
 
     if (salesorderId) {
       // update
