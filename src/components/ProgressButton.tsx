@@ -14,7 +14,8 @@ interface ProgressButtonProps {
 
 /**
  * Botón con barra de progreso integrada para procesos masivos.
- * Muestra una barra de fondo que se llena según current/total.
+ * - Si hay total conocido: muestra barra que se llena con porcentaje "X% (current/total)".
+ * - Si no hay total: muestra contador animado "Procesando… X" con shimmer.
  */
 export function ProgressButton({
   onClick,
@@ -26,10 +27,10 @@ export function ProgressButton({
   children,
   loadingLabel,
 }: ProgressButtonProps) {
-  const pct =
-    progress && progress.total > 0
-      ? Math.min(100, Math.round((progress.current / progress.total) * 100))
-      : null;
+  const hasTotal = !!(progress && progress.total > 0);
+  const pct = hasTotal
+    ? Math.min(100, Math.round((progress!.current / progress!.total) * 100))
+    : null;
 
   return (
     <Box position="relative" overflow="hidden" borderRadius="2" display="inline-flex">
@@ -40,8 +41,12 @@ export function ProgressButton({
           left="0"
           height="100%"
           width={`${pct}%` as any}
-          backgroundColor="primary-surface"
-          style={{ transition: 'width 0.3s ease', zIndex: 0, opacity: 0.5 }}
+          backgroundColor="primary-interactive"
+          style={{
+            transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+            zIndex: 0,
+            opacity: 0.85,
+          }}
         />
       )}
       {loading && pct === null && (
@@ -51,14 +56,14 @@ export function ProgressButton({
           left="0"
           height="100%"
           width="100%"
-          backgroundColor="primary-surface"
+          backgroundColor="primary-interactive"
           style={{
             zIndex: 0,
-            opacity: 0.4,
+            opacity: 0.5,
             backgroundImage:
-              'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
+              'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
             backgroundSize: '200% 100%',
-            animation: 'progress-shimmer 1.5s infinite',
+            animation: 'progress-shimmer 1.2s infinite',
           }}
         />
       )}
@@ -66,9 +71,11 @@ export function ProgressButton({
         <Button appearance={appearance} onClick={onClick} disabled={disabled || loading}>
           {icon}
           {loading
-            ? progress
-              ? `${loadingLabel || 'Procesando'} ${progress.current}/${progress.total}`
-              : loadingLabel || 'Procesando…'
+            ? hasTotal
+              ? `${loadingLabel || 'Procesando'} ${pct}% (${progress!.current}/${progress!.total})`
+              : progress
+                ? `${loadingLabel || 'Procesando'} ${progress.current}…`
+                : loadingLabel || 'Procesando…'
             : children}
         </Button>
       </Box>

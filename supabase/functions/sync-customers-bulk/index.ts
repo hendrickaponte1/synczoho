@@ -1,4 +1,5 @@
 // Sincroniza clientes Tiendanube → Zoho (bulk).
+// Soporta skipExisting para no reprocesar clientes ya vinculados.
 import {
   corsHeaders,
   getAdminClient,
@@ -6,13 +7,13 @@ import {
   zohoFetch,
   logSync,
 } from "../_shared/zoho.ts";
-import { getStore, tnFetchJson } from "../_shared/tiendanube.ts";
+import { getStore, tnFetch } from "../_shared/tiendanube.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const t0 = Date.now();
   try {
-    const { storeId, limit = 50, page = 1 } = await req.json();
+    const { storeId, limit = 50, page = 1, skipExisting = true } = await req.json();
     if (!storeId) {
       return new Response(JSON.stringify({ error: "storeId requerido" }), {
         status: 400,
@@ -23,34 +24,56 @@ Deno.serve(async (req) => {
     const store = await getStore(admin, storeId);
     const conn = await getZohoConnection(admin, storeId);
 
-    const customers = await tnFetchJson<any[]>(
-      store,
-      `/customers?page=${page}&per_page=${limit}`,
+    // Llamada con tnFetch para poder leer headers (x-total-count)
+    const resp = await tnFetch(store, `/customers?page=${page}&per_page=${limit}`);
+    const text = await resp.text();
+    if (!resp.ok) throw new Error(`Tiendanube ${resp.status}: ${text.slice(0, 300)}`);
+    const customers: any[] = text ? JSON.parse(text) : [];
+    const totalCount = Number(
+      resp.headers.get("x-total-count") || resp.headers.get("X-Total-Count") || 0,
     );
 
     let created = 0;
     let linked = 0;
+    let skipped = 0;
     let errors = 0;
     const details: any[] = [];
+
+    // Pre-cargar mapping existente para esta página (1 query)
+    const emails = customers.map((c) => c.email).filter(Boolean);
+    const existingMap = new Map<string, string>();
+    if (emails.length > 0) {
+      const { data: existing } = await admin
+        .from("customer_sync_map")
+        .select("email, zoho_contact_id, status")
+        .eq("store_id", storeId)
+        .in("email", emails);
+      for (const row of existing || []) {
+        if (row.email && row.zoho_contact_id && row.status === "success") {
+          existingMap.set(row.email, row.zoho_contact_id);
+        }
+      }
+    }
 
     for (const c of customers) {
       try {
         const email = c.email;
         if (!email) {
+          skipped++;
           details.push({ id: c.id, status: "skipped", reason: "sin email" });
           continue;
         }
-        // existing map
-        const { data: map } = await admin
-          .from("customer_sync_map")
-          .select("zoho_contact_id")
-          .eq("store_id", storeId)
-          .eq("email", email)
-          .maybeSingle();
 
-        let zohoId = map?.zoho_contact_id || null;
+        // Skip si ya existe y se pidió skipExisting
+        if (skipExisting && existingMap.has(email)) {
+          skipped++;
+          details.push({ email, status: "skipped", reason: "ya sincronizado" });
+          continue;
+        }
+
+        let zohoId = existingMap.get(email) || null;
         if (!zohoId) {
-          // search
+          // search en Zoho
           const sResp = await zohoFetch(
             admin,
             conn,
@@ -120,13 +143,22 @@ Deno.serve(async (req) => {
     await logSync(admin, storeId, {
       operation: "customer_sync_bulk",
       status: errors === 0 ? "success" : "error",
-      message: `Created: ${created} / Linked: ${linked} / Errors: ${errors}`,
+      message: `Created: ${created} / Linked: ${linked} / Skipped: ${skipped} / Errors: ${errors}`,
       duration_ms: Date.now() - t0,
-      payload: { created, linked, errors, total: customers.length },
+      payload: { created, linked, skipped, errors, total: customers.length, page },
     });
 
     return new Response(
-      JSON.stringify({ created, linked, errors, total: customers.length, details }),
+      JSON.stringify({
+        created,
+        linked,
+        skipped,
+        errors,
+        total: customers.length,
+        total_count: totalCount,
+        page,
+        details,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
