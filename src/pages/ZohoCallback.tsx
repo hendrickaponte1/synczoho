@@ -125,7 +125,42 @@ export default function ZohoCallback() {
           </>
         )}
 
-        {step === 'select_org' && (
+        {step === 'select_org' && orgs.length === 0 && (
+          <>
+            <XCircle className="w-10 h-10 text-amber-500 mx-auto mb-4" />
+            <h2 className="text-lg font-bold text-foreground mb-2">
+              No encontramos organizaciones de Zoho Inventory
+            </h2>
+            <div className="text-sm text-muted-foreground mb-6 space-y-3 text-left">
+              <p>
+                Tu cuenta de Zoho no tiene ninguna organización de <strong>Zoho Inventory</strong> creada,
+                o no estás logueado con la cuenta correcta.
+              </p>
+              <p className="font-medium text-foreground">Para continuar:</p>
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>
+                  Asegurate de tener una cuenta activa en{' '}
+                  <a
+                    href="https://www.zoho.com/inventory/signup.html"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary underline"
+                  >
+                    Zoho Inventory
+                  </a>{' '}
+                  (incluye plan gratuito).
+                </li>
+                <li>Iniciá sesión en Zoho Inventory desde tu navegador antes de reintentar.</li>
+                <li>Volvé al admin de Tiendanube y presioná de nuevo "Conectar con Zoho".</li>
+              </ol>
+            </div>
+            <Button onClick={handleBackToAdmin} className="w-full">
+              {storeHandle ? 'Volver al admin de Tiendanube' : 'Volver al inicio'}
+            </Button>
+          </>
+        )}
+
+        {step === 'select_org' && orgs.length > 0 && (
           <>
             <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-4" />
             <h2 className="text-lg font-bold text-foreground mb-2">¡Autorización exitosa!</h2>

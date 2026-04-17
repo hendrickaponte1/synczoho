@@ -32,6 +32,8 @@ export default function Index() {
   const [authMessage, setAuthMessage] = useState('');
   const [activeSection, setActiveSection] = useState('configuration');
   const [zohoConnected, setZohoConnected] = useState<boolean | null>(null);
+  // Cuando recién detectamos conexión completa, llevamos al usuario al Inicio (una sola vez)
+  const [autoNavigatedToDashboard, setAutoNavigatedToDashboard] = useState(false);
 
   useEffect(() => {
     if (isEmbedded && isConnected && storeInfo) {
@@ -132,12 +134,18 @@ export default function Index() {
   // Habilitar el resto de los módulos sólo cuando ambos canales estén conectados
   const fullyConnected = zohoConnected === true;
 
-  // Si todavía no está totalmente conectado, sólo mostramos Configuración
+  // Si todavía no está totalmente conectado, sólo mostramos Configuración.
+  // Una vez que se conecta, llevamos al Inicio automáticamente (sólo la primera vez).
   useEffect(() => {
     if (!fullyConnected && activeSection !== 'configuration') {
       setActiveSection('configuration');
+      return;
     }
-  }, [fullyConnected, activeSection]);
+    if (fullyConnected && !autoNavigatedToDashboard) {
+      setActiveSection('dashboard');
+      setAutoNavigatedToDashboard(true);
+    }
+  }, [fullyConnected, activeSection, autoNavigatedToDashboard]);
 
   const handleDisconnect = () => {
     localStorage.removeItem('tiendanube_store_id');
