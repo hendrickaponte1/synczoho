@@ -124,7 +124,7 @@ export const Scene2Connect: React.FC = () => {
         }}
       >
         <h2 style={{ fontSize: 84, fontWeight: 800, color: COLORS.text, margin: 0, letterSpacing: -1.5 }}>
-          Conectá una vez. <span style={{ color: COLORS.accent }}>Sincronizá para siempre.</span>
+          Conecta una vez. <span style={{ color: COLORS.accent }}>Sincroniza para siempre.</span>
         </h2>
       </div>
     </AbsoluteFill>

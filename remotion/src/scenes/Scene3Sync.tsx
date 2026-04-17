@@ -14,11 +14,11 @@ export const Scene3Sync: React.FC = () => {
   const opacity = Math.min(headerIn, fadeOut);
 
   const items = [
-    { sku: "REM-001", name: "Remera básica blanca", stock: 42 },
+    { sku: "CAM-001", name: "Camiseta básica blanca", stock: 42 },
     { sku: "PNT-204", name: "Pantalón slim azul", stock: 18 },
     { sku: "ZAP-117", name: "Zapatillas urbanas", stock: 7 },
-    { sku: "BUZ-309", name: "Buzo oversize negro", stock: 25 },
-    { sku: "CAM-088", name: "Camisa lino beige", stock: 13 },
+    { sku: "SUD-309", name: "Sudadera oversize negra", stock: 25 },
+    { sku: "CAM-088", name: "Camisa de lino beige", stock: 13 },
   ];
 
   return (
