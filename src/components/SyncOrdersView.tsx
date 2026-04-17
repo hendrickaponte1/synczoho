@@ -271,9 +271,15 @@ export function SyncOrdersView({ storeId }: Props) {
           <Card.Header>
             <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
               <Title as="h4" fontSize="h5">Órdenes recientes</Title>
-              <Button appearance="neutral" onClick={() => loadOrders(page)}>
-                <RedoIcon /> Actualizar
-              </Button>
+              <Box display="flex" gap="2">
+                <Button appearance="primary" onClick={bulkSyncPending} disabled={bulkSyncing}>
+                  {bulkSyncing ? <Spinner size="small" /> : <RedoIcon />}
+                  Sincronizar pendientes
+                </Button>
+                <Button appearance="neutral" onClick={() => loadOrders(page)}>
+                  <RedoIcon /> Actualizar
+                </Button>
+              </Box>
             </Box>
           </Card.Header>
           <Card.Body>
