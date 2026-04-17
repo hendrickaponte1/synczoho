@@ -401,6 +401,7 @@ export type Database = {
           orders_create_as_draft: boolean
           orders_enabled: boolean
           orders_generate_invoice_on_paid: boolean
+          orders_only_paid: boolean
           products_match_strategy: string
           products_overwrite_existing: boolean
           products_publish_on_import: boolean
@@ -420,6 +421,7 @@ export type Database = {
           orders_create_as_draft?: boolean
           orders_enabled?: boolean
           orders_generate_invoice_on_paid?: boolean
+          orders_only_paid?: boolean
           products_match_strategy?: string
           products_overwrite_existing?: boolean
           products_publish_on_import?: boolean
@@ -439,6 +441,7 @@ export type Database = {
           orders_create_as_draft?: boolean
           orders_enabled?: boolean
           orders_generate_invoice_on_paid?: boolean
+          orders_only_paid?: boolean
           products_match_strategy?: string
           products_overwrite_existing?: boolean
           products_publish_on_import?: boolean

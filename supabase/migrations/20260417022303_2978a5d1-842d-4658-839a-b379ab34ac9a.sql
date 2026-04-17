@@ -1,0 +1,1 @@
+ALTER TABLE public.sync_settings ADD COLUMN IF NOT EXISTS orders_only_paid boolean NOT NULL DEFAULT false;
