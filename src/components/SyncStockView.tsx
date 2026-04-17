@@ -6,6 +6,7 @@ import { RedoIcon } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
 import { ProgressButton } from '@/components/ProgressButton';
+import { FieldHelp } from '@/components/FieldHelp';
 import { toast } from 'sonner';
 
 interface Props { storeId: string }
@@ -47,15 +48,21 @@ export function SyncStockView({ storeId }: Props) {
         </Card.Header>
         <Card.Body>
           <Box display="flex" flexDirection="column" gap="3">
-            <Checkbox
-              name="stock_enabled"
-              label="Activar sincronización de stock"
-              checked={settings.stock_enabled}
-              onChange={(e) => save({ stock_enabled: e.target.checked })}
-            />
+            <Box display="flex" alignItems="center" gap="2">
+              <Checkbox
+                name="stock_enabled"
+                label="Activar sincronización de stock"
+                checked={settings.stock_enabled}
+                onChange={(e) => save({ stock_enabled: e.target.checked })}
+              />
+              <FieldHelp help="Habilita el motor de sincronización de inventario entre Zoho y Tiendanube. Cuando está activo, podrá ejecutar sincronizaciones manuales y, próximamente, automáticas. Si lo desactiva, ningún cambio de stock será replicado entre las plataformas." />
+            </Box>
 
             <Box>
-              <Text fontWeight="medium">Dirección de sincronización</Text>
+              <Box display="flex" alignItems="center" gap="2">
+                <Text fontWeight="medium">Dirección de sincronización</Text>
+                <FieldHelp help="Define hacia dónde fluyen los cambios de inventario. 'Zoho → Tiendanube' es lo recomendado si gestiona el stock en Zoho (es la fuente de verdad). 'Tiendanube → Zoho' si las ventas online actualizan Zoho. 'Bidireccional' sincroniza en ambos sentidos, pero requiere definir una prioridad para resolver conflictos." />
+              </Box>
               <Select
                 id="stock_direction"
                 name="stock_direction"
@@ -71,7 +78,10 @@ export function SyncStockView({ storeId }: Props) {
 
             {settings.stock_direction === 'bidirectional' && (
               <Box>
-                <Text fontWeight="medium">Prioridad en caso de conflicto</Text>
+                <Box display="flex" alignItems="center" gap="2">
+                  <Text fontWeight="medium">Prioridad en caso de conflicto</Text>
+                  <FieldHelp help="Cuando un mismo producto tiene cantidades diferentes en Zoho y Tiendanube al momento de sincronizar, esta opción decide cuál valor prevalece. Elija la plataforma donde gestiona habitualmente el inventario para evitar sobrescribir datos correctos." />
+                </Box>
                 <Select
                   id="stock_priority"
                   name="stock_priority"

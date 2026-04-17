@@ -5,6 +5,7 @@ import {
 import { RedoIcon, CogIcon, CashIcon, ChatDotsIcon } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
+import { FieldHelp } from '@/components/FieldHelp';
 import { toast } from 'sonner';
 
 interface Props { storeId: string }
@@ -177,48 +178,66 @@ export function SyncOrdersView({ storeId }: Props) {
           <Card.Body>
             {!settings ? <Spinner /> : (
               <Box display="flex" flexDirection="column" gap="3">
-                <Checkbox
-                  name="orders_enabled"
-                  label="Activar sincronización automática de órdenes (vía webhook)"
-                  checked={settings.orders_enabled}
-                  onChange={(e) => save({ orders_enabled: e.target.checked })}
-                />
-                <Checkbox
-                  name="orders_only_paid"
-                  label="Sincronizar solo órdenes con pago confirmado (estado: pagada)"
-                  checked={settings.orders_only_paid}
-                  onChange={(e) => save({ orders_only_paid: e.target.checked })}
-                />
-                <Checkbox
-                  name="orders_create_as_draft"
-                  label="Crear órdenes en Zoho como borrador (Draft)"
-                  checked={settings.orders_create_as_draft}
-                  onChange={(e) => save({
-                    orders_create_as_draft: e.target.checked,
-                    orders_auto_confirm: e.target.checked ? false : settings.orders_auto_confirm,
-                  })}
-                />
-                <Checkbox
-                  name="orders_auto_confirm"
-                  label="Confirmar la orden de venta automáticamente al crearse"
-                  checked={settings.orders_auto_confirm}
-                  onChange={(e) => save({
-                    orders_auto_confirm: e.target.checked,
-                    orders_create_as_draft: e.target.checked ? false : settings.orders_create_as_draft,
-                  })}
-                />
-                <Checkbox
-                  name="orders_generate_invoice_on_paid"
-                  label="Generar factura automáticamente cuando la orden esté pagada"
-                  checked={settings.orders_generate_invoice_on_paid}
-                  onChange={(e) => save({ orders_generate_invoice_on_paid: e.target.checked })}
-                />
-                <Checkbox
-                  name="customers_auto_sync_on_order"
-                  label="Crear o vincular el cliente en Zoho al recibir la orden"
-                  checked={settings.customers_auto_sync_on_order}
-                  onChange={(e) => save({ customers_auto_sync_on_order: e.target.checked })}
-                />
+                <Box display="flex" alignItems="center" gap="2">
+                  <Checkbox
+                    name="orders_enabled"
+                    label="Activar sincronización automática de órdenes (vía webhook)"
+                    checked={settings.orders_enabled}
+                    onChange={(e) => save({ orders_enabled: e.target.checked })}
+                  />
+                  <FieldHelp help="Cuando está activo, cada nueva orden creada en Tiendanube se enviará automáticamente a Zoho Inventory en tiempo real. Requiere que los webhooks de Tiendanube estén registrados (pestaña Webhooks). Si lo desactiva, deberá sincronizar las órdenes manualmente desde la pestaña 'Órdenes recientes'." />
+                </Box>
+                <Box display="flex" alignItems="center" gap="2">
+                  <Checkbox
+                    name="orders_only_paid"
+                    label="Sincronizar solo órdenes con pago confirmado (estado: pagada)"
+                    checked={settings.orders_only_paid}
+                    onChange={(e) => save({ orders_only_paid: e.target.checked })}
+                  />
+                  <FieldHelp help="Si está activo, únicamente las órdenes cuyo estado de pago sea 'pagada' se enviarán a Zoho. Las órdenes pendientes, abandonadas o canceladas serán ignoradas. Recomendado para evitar generar documentos en Zoho por ventas que aún no se concretaron." />
+                </Box>
+                <Box display="flex" alignItems="center" gap="2">
+                  <Checkbox
+                    name="orders_create_as_draft"
+                    label="Crear órdenes en Zoho como borrador (Draft)"
+                    checked={settings.orders_create_as_draft}
+                    onChange={(e) => save({
+                      orders_create_as_draft: e.target.checked,
+                      orders_auto_confirm: e.target.checked ? false : settings.orders_auto_confirm,
+                    })}
+                  />
+                  <FieldHelp help="Las órdenes se crearán en estado 'Borrador' en Zoho. Esto permite revisarlas antes de confirmarlas y descontar stock. Útil si necesita validar manualmente cada venta. Es excluyente con la opción de confirmación automática." />
+                </Box>
+                <Box display="flex" alignItems="center" gap="2">
+                  <Checkbox
+                    name="orders_auto_confirm"
+                    label="Confirmar la orden de venta automáticamente al crearse"
+                    checked={settings.orders_auto_confirm}
+                    onChange={(e) => save({
+                      orders_auto_confirm: e.target.checked,
+                      orders_create_as_draft: e.target.checked ? false : settings.orders_create_as_draft,
+                    })}
+                  />
+                  <FieldHelp help="Las órdenes se crearán y confirmarán inmediatamente en Zoho, descontando el stock y dejándolas listas para facturar. Recomendado si confía plenamente en los datos provenientes de Tiendanube. Es excluyente con la opción de borrador." />
+                </Box>
+                <Box display="flex" alignItems="center" gap="2">
+                  <Checkbox
+                    name="orders_generate_invoice_on_paid"
+                    label="Generar factura automáticamente cuando la orden esté pagada"
+                    checked={settings.orders_generate_invoice_on_paid}
+                    onChange={(e) => save({ orders_generate_invoice_on_paid: e.target.checked })}
+                  />
+                  <FieldHelp help="Al recibir la confirmación de pago de Tiendanube, el sistema generará automáticamente la factura asociada a la orden de venta en Zoho Inventory. Esto agiliza la facturación, pero puede no convenir si emite facturas desde otro sistema." />
+                </Box>
+                <Box display="flex" alignItems="center" gap="2">
+                  <Checkbox
+                    name="customers_auto_sync_on_order"
+                    label="Crear o vincular el cliente en Zoho al recibir la orden"
+                    checked={settings.customers_auto_sync_on_order}
+                    onChange={(e) => save({ customers_auto_sync_on_order: e.target.checked })}
+                  />
+                  <FieldHelp help="Antes de crear la orden de venta, el sistema buscará el cliente en Zoho por correo electrónico. Si no existe, lo creará automáticamente con los datos de facturación de la orden. Si lo desactiva, deberá tener todos los clientes ya cargados en Zoho previamente." />
+                </Box>
                 {saving && <Text fontSize="caption" color="neutral-textLow">Guardando…</Text>}
               </Box>
             )}
