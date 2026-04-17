@@ -6,6 +6,7 @@ import { RedoIcon } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
 import { ProgressButton } from '@/components/ProgressButton';
+import { FieldHelp } from '@/components/FieldHelp';
 import { toast } from 'sonner';
 
 interface Props { storeId: string }
@@ -109,18 +110,24 @@ export function SyncCustomersView({ storeId }: Props) {
         <Card.Body>
           {!settings ? <Spinner /> : (
             <Box display="flex" flexDirection="column" gap="3">
-              <Checkbox
-                name="customers_auto_sync_on_order"
-                label="Crear o vincular automáticamente el cliente en Zoho al recibir una orden"
-                checked={settings.customers_auto_sync_on_order}
-                onChange={(e) => save({ customers_auto_sync_on_order: e.target.checked })}
-              />
-              <Checkbox
-                name="skipExisting"
-                label="Omitir clientes ya sincronizados (recomendado para ahorrar recursos)"
-                checked={skipExisting}
-                onChange={(e) => setSkipExisting(e.target.checked)}
-              />
+              <Box display="flex" alignItems="center" gap="2">
+                <Checkbox
+                  name="customers_auto_sync_on_order"
+                  label="Crear o vincular automáticamente el cliente en Zoho al recibir una orden"
+                  checked={settings.customers_auto_sync_on_order}
+                  onChange={(e) => save({ customers_auto_sync_on_order: e.target.checked })}
+                />
+                <FieldHelp help="Cuando llega una nueva orden desde Tiendanube, el sistema busca al cliente en Zoho por su correo. Si no existe, lo crea automáticamente con sus datos de facturación. Si ya existe, solo lo vincula. Esto evita tener que cargar contactos manualmente." />
+              </Box>
+              <Box display="flex" alignItems="center" gap="2">
+                <Checkbox
+                  name="skipExisting"
+                  label="Omitir clientes ya sincronizados (recomendado para ahorrar recursos)"
+                  checked={skipExisting}
+                  onChange={(e) => setSkipExisting(e.target.checked)}
+                />
+                <FieldHelp help="Si está activo, los clientes que ya tienen un contacto vinculado en Zoho serán saltados durante la sincronización masiva. Esto reduce el tiempo de procesamiento y evita consumir cupos de la API innecesariamente. Desactívelo solo si necesita re-sincronizar datos actualizados." />
+              </Box>
             </Box>
           )}
         </Card.Body>
