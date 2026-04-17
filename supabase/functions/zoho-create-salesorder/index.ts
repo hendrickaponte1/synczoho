@@ -188,7 +188,8 @@ Deno.serve(async (req) => {
     };
 
     let salesorderId = existingMap?.zoho_salesorder_id || null;
-    let invoiceId: string | null = null;
+    let invoiceId: string | null = (existingMap as any)?.zoho_invoice_id || null;
+    const isPaid = order.payment_status === "paid" || event === "order/paid";
 
     if (salesorderId) {
       // update
@@ -218,20 +219,61 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 7) Generar factura si está pago y settings lo pide
-    if (
-      settings?.orders_generate_invoice_on_paid &&
-      (order.payment_status === "paid" || event === "order/paid") &&
-      salesorderId
-    ) {
-      const invResp = await zohoFetch(admin, conn, `/inventory/v1/invoices/fromsalesorder?salesorder_id=${salesorderId}`, {
-        method: "POST",
-      });
-      const invJson = await invResp.json();
-      if (invResp.ok && invJson.invoice?.invoice_id) {
-        invoiceId = invJson.invoice.invoice_id;
-      } else {
-        console.error("invoice from SO failed", invJson);
+    // 7) Si está pagada: asegurar SO confirmada → crear/obtener factura → marcar como pagada
+    if (isPaid && salesorderId) {
+      // 7.a) Confirmar SO si aún está en draft (Zoho no permite facturar borradores)
+      try {
+        await zohoFetch(admin, conn, `/inventory/v1/salesorders/${salesorderId}/status/confirmed`, {
+          method: "POST",
+        });
+      } catch (_) { /* puede ya estar confirmada */ }
+
+      // 7.b) Crear factura si configurado y aún no existe
+      if (settings?.orders_generate_invoice_on_paid && !invoiceId) {
+        const invResp = await zohoFetch(
+          admin,
+          conn,
+          `/inventory/v1/invoices/fromsalesorder?salesorder_id=${salesorderId}`,
+          { method: "POST" },
+        );
+        const invJson = await invResp.json();
+        if (invResp.ok && invJson.invoice?.invoice_id) {
+          invoiceId = invJson.invoice.invoice_id;
+        } else {
+          console.error("invoice from SO failed", invJson);
+        }
+      }
+
+      // 7.c) Marcar la factura como pagada en Zoho registrando un payment por el balance pendiente
+      if (invoiceId) {
+        try {
+          const invGet = await zohoFetch(admin, conn, `/inventory/v1/invoices/${invoiceId}`);
+          const invData = await invGet.json();
+          const inv = invData?.invoice;
+          const balance = Number(inv?.balance ?? inv?.total ?? order.total ?? 0);
+          const customerId = inv?.customer_id || zohoContactId;
+          if (balance > 0 && customerId) {
+            const payResp = await zohoFetch(admin, conn, `/inventory/v1/customerpayments`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                customer_id: customerId,
+                payment_mode: "Tiendanube",
+                amount: balance,
+                date: new Date().toISOString().slice(0, 10),
+                reference_number: `TN-${order.number || order.id}`,
+                description: `Pago recibido por orden Tiendanube #${order.number || order.id}`,
+                invoices: [{ invoice_id: invoiceId, amount_applied: balance }],
+              }),
+            });
+            const payJson = await payResp.json();
+            if (!payResp.ok) {
+              console.error("zoho payment failed", payJson);
+            }
+          }
+        } catch (e) {
+          console.error("mark invoice paid error", e);
+        }
       }
     }
 
