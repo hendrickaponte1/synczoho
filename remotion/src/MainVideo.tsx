@@ -53,7 +53,7 @@ export const MainVideo: React.FC = () => {
           presentation={fade()}
           timing={linearTiming({ durationInFrames: 22 })}
         />
-        <TransitionSeries.Sequence durationInFrames={170}>
+        <TransitionSeries.Sequence durationInFrames={210}>
           <Scene5Brand />
         </TransitionSeries.Sequence>
       </TransitionSeries>

@@ -19,7 +19,7 @@ export const Scene1Chaos: React.FC = () => {
   const word3 = spring({ frame: frame - 60, fps, config: { damping: 12, stiffness: 120 } });
 
   // Floating "chaos" tags
-  const tags = ["stock.xlsx", "pedido #4521", "precio actualizar", "sin stock!", "factura?"];
+  const tags = ["stock.xlsx", "pedido #4521", "actualizar precio", "¡sin stock!", "¿factura?"];
 
   return (
     <AbsoluteFill style={{ fontFamily, opacity, padding: 120, justifyContent: "center" }}>
@@ -105,7 +105,7 @@ export const Scene1Chaos: React.FC = () => {
               color: COLORS.warning,
             }}
           >
-            a mano
+            manualmente
           </span>
         </h1>
         <p

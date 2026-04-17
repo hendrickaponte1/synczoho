@@ -17,7 +17,7 @@ export const Scene4Benefits: React.FC = () => {
     {
       icon: "⏱",
       title: "Ahorro de tiempo",
-      desc: "Olvidate de cargar productos dos veces o actualizar planillas.",
+      desc: "Olvídate de cargar productos dos veces o actualizar planillas.",
       color: COLORS.primaryGlow,
     },
     {
