@@ -1,6 +1,7 @@
 // Importa items de Zoho a Tiendanube. Procesa de a uno y devuelve resultado por item.
 // Soporta acciones: 'create' (crear nuevo), 'update' (actualizar vinculado), 'link' (solo vincular sin enviar).
-import { corsHeaders, getAdminClient, getZohoConnection, logSync, zohoFetch } from "../_shared/zoho.ts";
+import { corsHeaders, getAdminClient, getZohoConnection, getValidAccessToken, INVENTORY_DOMAINS, logSync, zohoFetch } from "../_shared/zoho.ts";
+import { encodeBase64 } from "https://deno.land/std@0.208.0/encoding/base64.ts";
 
 interface ImportRequest {
   store_id: string;
