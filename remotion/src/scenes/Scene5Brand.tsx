@@ -4,90 +4,106 @@ import { COLORS } from "../theme";
 
 const { fontFamily } = loadFont("normal", { weights: ["400", "600", "700", "800"], subsets: ["latin"] });
 
-// Scene 5 (750-900f, 5s): Brand close
+// Scene 5: Brand close — "Zoho Sync" powered by Zoho Inventory
 export const Scene5Brand: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const logoIn = spring({ frame, fps, config: { damping: 14, stiffness: 120 } });
-  const titleIn = spring({ frame: frame - 18, fps, config: { damping: 18 } });
-  const taglineIn = spring({ frame: frame - 40, fps, config: { damping: 18 } });
-  const urlIn = spring({ frame: frame - 65, fps, config: { damping: 18 } });
-
-  // Subtle logo float
-  const float = Math.sin(frame / 20) * 4;
+  const titleIn = spring({ frame, fps, config: { damping: 14, stiffness: 120 } });
+  const taglineIn = spring({ frame: frame - 22, fps, config: { damping: 18 } });
+  const logoIn = spring({ frame: frame - 45, fps, config: { damping: 18 } });
+  const urlIn = spring({ frame: frame - 70, fps, config: { damping: 18 } });
 
   // Final glow pulse
   const pulse = interpolate(frame, [80, 110, 140], [0.3, 0.8, 0.3], { extrapolateRight: "clamp" });
 
   return (
     <AbsoluteFill style={{ fontFamily, justifyContent: "center", alignItems: "center" }}>
-      {/* Glow behind logo */}
+      {/* Glow background */}
       <div
         style={{
           position: "absolute",
-          width: 600,
-          height: 600,
+          width: 700,
+          height: 700,
           borderRadius: 999,
           background: `radial-gradient(circle, ${COLORS.primary}55 0%, transparent 60%)`,
           filter: "blur(40px)",
           opacity: pulse,
           top: "50%",
           left: "50%",
-          transform: "translate(-50%, -75%)",
+          transform: "translate(-50%, -50%)",
         }}
       />
 
       <div style={{ textAlign: "center", position: "relative" }}>
-        <div
-          style={{
-            transform: `scale(${logoIn}) translateY(${float}px)`,
-            opacity: logoIn,
-            marginBottom: 32,
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
-          <div style={{ width: 180, height: 180, borderRadius: 36, overflow: "hidden", boxShadow: `0 20px 60px ${COLORS.primary}66` }}>
-            <Img src={staticFile("images/app-icon.png")} style={{ width: "100%", height: "100%" }} />
-          </div>
-        </div>
-
         <h1
           style={{
-            fontSize: 140,
+            fontSize: 180,
             fontWeight: 800,
             color: COLORS.text,
             margin: 0,
-            letterSpacing: -3,
-            transform: `translateY(${interpolate(titleIn, [0, 1], [30, 0])}px)`,
+            letterSpacing: -4,
+            transform: `scale(${interpolate(titleIn, [0, 1], [0.85, 1])}) translateY(${interpolate(titleIn, [0, 1], [20, 0])}px)`,
             opacity: titleIn,
+            lineHeight: 1,
           }}
         >
-          Tienda<span style={{ color: COLORS.primaryGlow }}>Sync</span>
+          Zoho<span style={{ color: COLORS.primaryGlow }}>Sync</span>
         </h1>
 
         <p
           style={{
-            fontSize: 36,
+            fontSize: 34,
             color: COLORS.textMuted,
-            marginTop: 24,
+            marginTop: 28,
             marginBottom: 0,
             transform: `translateY(${interpolate(taglineIn, [0, 1], [20, 0])}px)`,
             opacity: taglineIn,
             fontWeight: 400,
           }}
         >
-          Tiendanube <span style={{ color: COLORS.accent, margin: "0 12px" }}>↔</span> Zoho Inventory
+          Tu tienda y tu inventario, siempre en sintonía.
         </p>
+
+        {/* Powered by Zoho Inventory logo */}
+        <div
+          style={{
+            marginTop: 60,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 16,
+            transform: `translateY(${interpolate(logoIn, [0, 1], [20, 0])}px)`,
+            opacity: logoIn,
+          }}
+        >
+          <div style={{ fontSize: 16, color: COLORS.textMuted, letterSpacing: 3, textTransform: "uppercase", fontWeight: 600 }}>
+            Integración oficial con
+          </div>
+          <div
+            style={{
+              padding: "20px 40px",
+              background: "#FFFFFF",
+              borderRadius: 20,
+              boxShadow: `0 20px 60px ${COLORS.primary}33`,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Img
+              src={staticFile("images/zoho-inventory-logo.png")}
+              style={{ height: 80, width: "auto", display: "block" }}
+            />
+          </div>
+        </div>
 
         <div
           style={{
-            marginTop: 50,
+            marginTop: 40,
             display: "inline-flex",
             alignItems: "center",
             gap: 12,
-            padding: "18px 36px",
+            padding: "16px 32px",
             background: `${COLORS.primary}1F`,
             border: `1px solid ${COLORS.primary}66`,
             borderRadius: 999,
@@ -96,7 +112,7 @@ export const Scene5Brand: React.FC = () => {
           }}
         >
           <div style={{ width: 10, height: 10, borderRadius: 999, background: COLORS.success, boxShadow: `0 0 12px ${COLORS.success}` }} />
-          <span style={{ fontSize: 26, color: COLORS.text, fontWeight: 600 }}>synczoho.lovable.app</span>
+          <span style={{ fontSize: 24, color: COLORS.text, fontWeight: 600 }}>synczoho.lovable.app</span>
         </div>
       </div>
     </AbsoluteFill>
