@@ -37,11 +37,32 @@ export function SyncOrdersView({ storeId }: Props) {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [retryingId, setRetryingId] = useState<number | null>(null);
+  const [bulkSyncing, setBulkSyncing] = useState(false);
   const [webhooksStatus, setWebhooksStatus] = useState<{
     all_active: boolean; missing: string[]; registered: any[]; webhook_url: string;
   } | null>(null);
   const [webhooksLoading, setWebhooksLoading] = useState(false);
   const [registeringWebhooks, setRegisteringWebhooks] = useState(false);
+
+  const bulkSyncPending = async () => {
+    setBulkSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-orders-bulk', {
+        body: { storeId, pages: 2, perPage: 50, onlyMissing: true },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const { success = 0, skipped = 0, errors = 0, attempted = 0 } = data || {};
+      if (attempted === 0) toast.success('Todas las órdenes recientes ya estaban sincronizadas');
+      else if (errors === 0) toast.success(`${success} órdenes sincronizadas (${skipped} omitidas)`);
+      else toast.warning(`${success} OK · ${errors} con error · ${skipped} omitidas`);
+      loadOrders(page);
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al sincronizar órdenes pendientes');
+    } finally {
+      setBulkSyncing(false);
+    }
+  };
 
   const loadWebhooksStatus = async () => {
     setWebhooksLoading(true);
