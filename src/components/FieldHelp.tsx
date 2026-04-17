@@ -24,15 +24,9 @@ export function FieldHelp({ label, help }: FieldHelpProps) {
         </Text>
       )}
       <Tooltip content={help} position="top">
-        <Box
-          as="span"
-          display="inline-flex"
-          alignItems="center"
-          color="neutral-textLow"
-          cursor="help"
-        >
+        <span style={{ display: 'inline-flex', alignItems: 'center', color: 'hsl(var(--muted-foreground))', cursor: 'help' }}>
           <InfoCircleIcon size="small" />
-        </Box>
+        </span>
       </Tooltip>
     </Box>
   );
