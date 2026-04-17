@@ -86,11 +86,13 @@ export function DashboardView({ storeId, onNavigate }: DashboardViewProps) {
             .maybeSingle(),
         ]);
 
-        const productsSynced = (products.data || []).filter((p: any) => p.status === 'synced' || p.status === 'linked').length;
+        // Estados reales en BD: 'success', 'linked', 'pending', 'error'
+        const isOk = (s: string) => s === 'success' || s === 'synced' || s === 'linked' || s === 'imported';
+        const productsSynced = (products.data || []).filter((p: any) => isOk(p.status)).length;
         const productsPending = (products.data || []).filter((p: any) => p.status === 'pending').length;
-        const ordersSynced = (orders.data || []).filter((o: any) => o.status === 'synced').length;
+        const ordersSynced = (orders.data || []).filter((o: any) => isOk(o.status)).length;
         const ordersError = (orders.data || []).filter((o: any) => o.status === 'error').length;
-        const customersSynced = (customers.data || []).filter((c: any) => c.status === 'synced' || c.status === 'linked').length;
+        const customersSynced = (customers.data || []).filter((c: any) => isOk(c.status)).length;
 
         setMetrics({
           productsSynced,
