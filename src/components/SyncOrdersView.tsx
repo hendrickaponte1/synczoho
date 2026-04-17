@@ -94,7 +94,7 @@ export function SyncOrdersView({ storeId }: Props) {
     }
   };
 
-  useEffect(() => { loadOrders(1); /* eslint-disable-next-line */ }, [storeId]);
+  useEffect(() => { loadOrders(1); loadWebhooksStatus(); /* eslint-disable-next-line */ }, [storeId]);
 
   const retryOrder = async (orderId: number) => {
     setRetryingId(orderId);
@@ -240,15 +240,55 @@ export function SyncOrdersView({ storeId }: Props) {
         </Card.Body>
       </Card>
 
-      <Alert appearance="primary" title="Webhook de Tiendanube">
-        <Text>
-          Para que las órdenes se sincronicen automáticamente, registra esta URL como webhook en tu app de Tiendanube
-          (eventos: <code>order/created</code>, <code>order/updated</code>, <code>order/paid</code>):
-        </Text>
-        <Text fontSize="caption">
-          {`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tiendanube-webhook`}
-        </Text>
-      </Alert>
+      <Card>
+        <Card.Header>
+          <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
+            <Title as="h4" fontSize="h5">Webhooks de Tiendanube</Title>
+            <Box display="flex" gap="2">
+              <Button appearance="neutral" onClick={loadWebhooksStatus} disabled={webhooksLoading}>
+                {webhooksLoading ? <Spinner size="small" /> : <RedoIcon />}
+                Verificar estado
+              </Button>
+              {webhooksStatus && !webhooksStatus.all_active && (
+                <Button appearance="primary" onClick={registerWebhooks} disabled={registeringWebhooks}>
+                  {registeringWebhooks ? <Spinner size="small" /> : null}
+                  Activar webhooks
+                </Button>
+              )}
+            </Box>
+          </Box>
+        </Card.Header>
+        <Card.Body>
+          {!webhooksStatus ? (
+            <Spinner />
+          ) : webhooksStatus.all_active ? (
+            <Alert appearance="success" title="Webhooks activos">
+              <Text>
+                Todos los eventos requeridos están registrados. Las nuevas órdenes se sincronizarán automáticamente con Zoho Inventory.
+              </Text>
+              <Box marginTop="2" display="flex" gap="1" flexWrap="wrap">
+                {webhooksStatus.registered.map((w: any) => (
+                  <Tag key={w.id} appearance="success">{w.event}</Tag>
+                ))}
+              </Box>
+            </Alert>
+          ) : (
+            <Alert appearance="warning" title="Faltan webhooks por registrar">
+              <Text>
+                Las órdenes nuevas no se están sincronizando automáticamente. Presione "Activar webhooks" para registrarlos.
+              </Text>
+              <Box marginTop="2" display="flex" gap="1" flexWrap="wrap">
+                {webhooksStatus.registered.map((w: any) => (
+                  <Tag key={w.id} appearance="success">{w.event}</Tag>
+                ))}
+                {webhooksStatus.missing.map((e: string) => (
+                  <Tag key={e} appearance="danger">Falta: {e}</Tag>
+                ))}
+              </Box>
+            </Alert>
+          )}
+        </Card.Body>
+      </Card>
     </Box>
   );
 }
