@@ -67,6 +67,17 @@ Deno.serve(async (req) => {
     const store = await getStore(admin, storeId);
     const order = await tnFetchJson<TNOrder>(store, `/orders/${orderId}`);
 
+    // 2.b) Filtro: solo órdenes pagadas
+    if (settings?.orders_only_paid && order.payment_status !== "paid") {
+      await logSync(admin, storeId, {
+        operation: "order_sync",
+        status: "skipped",
+        message: `Orden #${order.number} omitida (estado de pago: ${order.payment_status})`,
+        duration_ms: Date.now() - t0,
+      });
+      return jsonOk({ skipped: true, reason: "not_paid", payment_status: order.payment_status });
+    }
+
     // 3) Conexión Zoho
     const conn = await getZohoConnection(admin, storeId);
 
