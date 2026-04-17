@@ -28,6 +28,7 @@ const DEFAULTS = {
   orders_create_as_draft: true,
   orders_auto_confirm: false,
   orders_generate_invoice_on_paid: false,
+  orders_only_paid: false,
   stock_enabled: false,
   stock_direction: "zoho_to_tn",
   stock_priority: "zoho",
