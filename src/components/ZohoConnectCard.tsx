@@ -180,6 +180,96 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
 
   const isConnected = connection?.status === 'active' && connection?.organization_id;
 
+  // Estado: aún no conectado y sin orgs pendientes → pantalla hero
+  if (!loading && !isConnected && !orgs) {
+    return (
+      <Card className="overflow-hidden border-border">
+        <CardContent className="p-0">
+          <div className="grid md:grid-cols-2 gap-0">
+            {/* Ilustración / branding */}
+            <div className="bg-muted/40 flex items-center justify-center p-10 border-b md:border-b-0 md:border-r border-border">
+              <div className="text-center space-y-4">
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-background shadow-sm border border-border">
+                  <img
+                    src="/zoho-icon.png"
+                    alt="Zoho Inventory"
+                    className="w-14 h-14 object-contain"
+                  />
+                </div>
+                <img
+                  src="/zoho-inventory-logo.png"
+                  alt="Zoho Inventory"
+                  className="h-7 w-auto mx-auto"
+                />
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-8 md:p-10 space-y-6">
+              <div>
+                <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase mb-2">
+                  Zoho Inventory
+                </p>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">
+                  Sincroniza tu inventario con Zoho
+                </h2>
+              </div>
+
+              <ul className="space-y-4">
+                <li className="flex gap-3">
+                  <RefreshCw className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-muted-foreground leading-relaxed">
+                    Sincroniza automáticamente productos, stock y pedidos entre Tiendanube y Zoho Inventory.
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <Sparkles className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-muted-foreground leading-relaxed">
+                    Olvídate de actualizar el stock manualmente. Cada venta se refleja al instante en ambas plataformas.
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <ShieldCheck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-muted-foreground leading-relaxed">
+                    Conexión segura mediante OAuth oficial de Zoho. Tus credenciales nunca se almacenan en nuestros servidores.
+                  </span>
+                </li>
+              </ul>
+
+              <div className="pt-2">
+                <Button
+                  size="lg"
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  className="w-full md:w-auto"
+                >
+                  {connecting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Link2 className="w-4 h-4 mr-2" />
+                  )}
+                  Conectar Zoho Inventory
+                </Button>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Al conectar, serás redirigido a Zoho para autorizar el acceso. Necesitas una cuenta activa de{' '}
+                  <a
+                    href="https://www.zoho.com/inventory/signup.html"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary underline"
+                  >
+                    Zoho Inventory
+                  </a>
+                  .
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className={isConnected ? '' : 'border-dashed'}>
       <CardHeader className="pb-3">
@@ -240,25 +330,7 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
               Confirmar organización
             </Button>
           </>
-        ) : (
-          <>
-            <p className="text-sm text-muted-foreground">
-              Conecta tu cuenta de Zoho Inventory para iniciar la sincronización de productos e inventario.
-            </p>
-            <Button size="sm" onClick={handleConnect} disabled={connecting}>
-              {connecting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Link2 className="w-4 h-4 mr-2" />
-              )}
-              Conectar Zoho Inventory
-            </Button>
-            <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-              <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-              <span>Serás redirigido a Zoho para autorizar el acceso.</span>
-            </div>
-          </>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );
