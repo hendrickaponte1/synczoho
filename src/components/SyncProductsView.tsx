@@ -511,6 +511,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
                   </Table.Cell>
                   <Table.Cell as="th">Producto</Table.Cell>
                   <Table.Cell as="th">SKU</Table.Cell>
+                  <Table.Cell as="th">Variantes</Table.Cell>
                   <Table.Cell as="th">Precio</Table.Cell>
                   <Table.Cell as="th">Stock</Table.Cell>
                   <Table.Cell as="th">Estado</Table.Cell>
@@ -523,13 +524,14 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
               <Table.Body>
                 {items.map((it) => {
                   const tag = matchStatusTag[it.match_status] || matchStatusTag.new;
+                  const variantCount = it.is_group ? it.variants.length : 1;
                   return (
-                    <Table.Row key={it.item_id}>
+                    <Table.Row key={it.row_id}>
                       <Table.Cell>
                         <Checkbox
-                          name={it.item_id}
-                          checked={selected.has(it.item_id)}
-                          onChange={() => toggle(it.item_id)}
+                          name={it.row_id}
+                          checked={selected.has(it.row_id)}
+                          onChange={() => toggle(it.row_id)}
                         />
                       </Table.Cell>
                       <Table.Cell>
@@ -545,7 +547,16 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
                         </Box>
                       </Table.Cell>
                       <Table.Cell>
-                        <Text fontSize="caption">{it.sku || '—'}</Text>
+                        <Text fontSize="caption">
+                          {it.is_group ? `${variantCount} SKUs` : (it.sku || '—')}
+                        </Text>
+                      </Table.Cell>
+                      <Table.Cell>
+                        {it.is_group ? (
+                          <Tag appearance="primary">{variantCount} variantes</Tag>
+                        ) : (
+                          <Text fontSize="caption" color="neutral-textLow">Simple</Text>
+                        )}
                       </Table.Cell>
                       <Table.Cell>
                         <Text>${Number(it.rate ?? 0).toLocaleString('es-AR')}</Text>
