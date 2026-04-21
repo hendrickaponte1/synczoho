@@ -162,20 +162,21 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
 
   const toggleAll = () => {
     if (selected.size === items.length) setSelected(new Set());
-    else setSelected(new Set(items.map((i) => i.item_id)));
+    else setSelected(new Set(items.map((i) => i.row_id)));
   };
 
   const selectedItems = useMemo(
-    () => items.filter((i) => selected.has(i.item_id)),
+    () => items.filter((i) => selected.has(i.row_id)),
     [items, selected],
   );
 
   const summary = useMemo(() => {
-    const s = { create: 0, update: 0, link: 0, conflict: 0 };
+    const s = { create: 0, update: 0, link: 0, conflict: 0, variants: 0 };
     selectedItems.forEach((i) => {
       if (i.match_status === 'linked' || i.match_status === 'imported') s.update++;
       else if (i.match_status === 'conflict' && i.tiendanube_product_id) s.conflict++;
       else s.create++;
+      s.variants += Math.max(1, i.variants?.length || 0);
     });
     return s;
   }, [selectedItems]);
@@ -186,7 +187,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
     try {
       const target = retryItems
         ? (retryItems
-            .map((r) => items.find((i) => i.item_id === r.zoho_item_id))
+            .map((r) => items.find((i) => i.row_id === r.zoho_item_id))
             .filter(Boolean) as ZohoItem[])
         : selectedItems;
 
@@ -199,7 +200,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
         else if (it.match_status === 'conflict' && it.tiendanube_product_id) action = 'link';
         else action = 'create';
         return {
-          zoho_item_id: it.item_id,
+          zoho_item_id: it.row_id, // backend resuelve "group:{gid}" o item_id
           action,
           tiendanube_product_id: it.tiendanube_product_id,
         };
