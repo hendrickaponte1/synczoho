@@ -33,7 +33,20 @@ import { ProgressButton } from '@/components/ProgressButton';
 import { FieldHelp } from '@/components/FieldHelp';
 import { toast } from 'sonner';
 
+interface ZohoVariant {
+  item_id: string;
+  name: string;
+  sku: string | null;
+  status: string;
+  rate: number;
+  stock_on_hand: number;
+  attributes: Record<string, string>;
+}
+
 interface ZohoItem {
+  row_id: string; // "group:{gid}" o "item:{id}"
+  is_group: boolean;
+  group_id: string | null;
   item_id: string;
   name: string;
   sku: string | null;
@@ -42,6 +55,7 @@ interface ZohoItem {
   stock_on_hand: number;
   description: string;
   category_name: string | null;
+  variants: ZohoVariant[];
   match_status: 'new' | 'linked' | 'imported' | 'conflict' | 'error' | 'ignored';
   tiendanube_product_id: number | null;
   last_synced_at: string | null;
@@ -54,6 +68,7 @@ interface ImportResult {
   message?: string;
   tiendanube_product_id?: number | null;
   action: string;
+  variants_count?: number;
 }
 
 interface SyncProductsViewProps {
@@ -147,20 +162,21 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
 
   const toggleAll = () => {
     if (selected.size === items.length) setSelected(new Set());
-    else setSelected(new Set(items.map((i) => i.item_id)));
+    else setSelected(new Set(items.map((i) => i.row_id)));
   };
 
   const selectedItems = useMemo(
-    () => items.filter((i) => selected.has(i.item_id)),
+    () => items.filter((i) => selected.has(i.row_id)),
     [items, selected],
   );
 
   const summary = useMemo(() => {
-    const s = { create: 0, update: 0, link: 0, conflict: 0 };
+    const s = { create: 0, update: 0, link: 0, conflict: 0, variants: 0 };
     selectedItems.forEach((i) => {
       if (i.match_status === 'linked' || i.match_status === 'imported') s.update++;
       else if (i.match_status === 'conflict' && i.tiendanube_product_id) s.conflict++;
       else s.create++;
+      s.variants += Math.max(1, i.variants?.length || 0);
     });
     return s;
   }, [selectedItems]);
@@ -171,7 +187,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
     try {
       const target = retryItems
         ? (retryItems
-            .map((r) => items.find((i) => i.item_id === r.zoho_item_id))
+            .map((r) => items.find((i) => i.row_id === r.zoho_item_id))
             .filter(Boolean) as ZohoItem[])
         : selectedItems;
 
@@ -184,7 +200,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
         else if (it.match_status === 'conflict' && it.tiendanube_product_id) action = 'link';
         else action = 'create';
         return {
-          zoho_item_id: it.item_id,
+          zoho_item_id: it.row_id, // backend resuelve "group:{gid}" o item_id
           action,
           tiendanube_product_id: it.tiendanube_product_id,
         };
@@ -495,6 +511,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
                   </Table.Cell>
                   <Table.Cell as="th">Producto</Table.Cell>
                   <Table.Cell as="th">SKU</Table.Cell>
+                  <Table.Cell as="th">Variantes</Table.Cell>
                   <Table.Cell as="th">Precio</Table.Cell>
                   <Table.Cell as="th">Stock</Table.Cell>
                   <Table.Cell as="th">Estado</Table.Cell>
@@ -507,13 +524,14 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
               <Table.Body>
                 {items.map((it) => {
                   const tag = matchStatusTag[it.match_status] || matchStatusTag.new;
+                  const variantCount = it.is_group ? it.variants.length : 1;
                   return (
-                    <Table.Row key={it.item_id}>
+                    <Table.Row key={it.row_id}>
                       <Table.Cell>
                         <Checkbox
-                          name={it.item_id}
-                          checked={selected.has(it.item_id)}
-                          onChange={() => toggle(it.item_id)}
+                          name={it.row_id}
+                          checked={selected.has(it.row_id)}
+                          onChange={() => toggle(it.row_id)}
                         />
                       </Table.Cell>
                       <Table.Cell>
@@ -529,7 +547,16 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
                         </Box>
                       </Table.Cell>
                       <Table.Cell>
-                        <Text fontSize="caption">{it.sku || '—'}</Text>
+                        <Text fontSize="caption">
+                          {it.is_group ? `${variantCount} SKUs` : (it.sku || '—')}
+                        </Text>
+                      </Table.Cell>
+                      <Table.Cell>
+                        {it.is_group ? (
+                          <Tag appearance="primary">{variantCount} variantes</Tag>
+                        ) : (
+                          <Text fontSize="caption" color="neutral-textLow">Simple</Text>
+                        )}
                       </Table.Cell>
                       <Table.Cell>
                         <Text>${Number(it.rate ?? 0).toLocaleString('es-AR')}</Text>
@@ -590,7 +617,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
           <Box display="flex" flexDirection="column" gap="3">
             <Text>
               Se van a sincronizar <strong>{selectedItems.length}</strong> producto(s) de Zoho a
-              Tiendanube:
+              Tiendanube (<strong>{summary.variants}</strong> variante/s en total):
             </Text>
             <Box
               display="flex"
@@ -646,7 +673,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
             overflow="auto"
           >
             {(results || []).map((r) => {
-              const it = items.find((i) => i.item_id === r.zoho_item_id);
+              const it = items.find((i) => i.row_id === r.zoho_item_id);
               return (
                 <Box
                   key={r.zoho_item_id}
@@ -667,6 +694,9 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
                     <Box display="flex" flexDirection="column">
                       <Text fontSize="caption" fontWeight="medium">
                         {it?.name || r.zoho_item_id}
+                        {r.variants_count && r.variants_count > 1
+                          ? ` · ${r.variants_count} variantes`
+                          : ''}
                       </Text>
                       {r.message && (
                         <Text fontSize="caption" color="danger-textLow">
@@ -706,13 +736,17 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
         <Sidebar.Body>
           {detail && (
             <Box display="flex" flexDirection="column" gap="3">
-              <DetailRow label="Item ID Zoho" value={detail.item_id} />
-              <DetailRow label="SKU" value={detail.sku || '—'} />
               <DetailRow
-                label="Precio"
+                label="Tipo"
+                value={detail.is_group ? `Grupo · ${detail.variants.length} variantes` : 'Producto simple'}
+              />
+              <DetailRow label="ID Zoho" value={detail.is_group ? `group:${detail.group_id}` : detail.item_id} />
+              <DetailRow label="SKU(s)" value={detail.sku || '—'} />
+              <DetailRow
+                label="Precio (desde)"
                 value={`$${Number(detail.rate).toLocaleString('es')}`}
               />
-              <DetailRow label="Stock" value={String(detail.stock_on_hand)} />
+              <DetailRow label="Stock total" value={String(detail.stock_on_hand)} />
               <DetailRow label="Estado en Zoho" value={detail.status} />
               <DetailRow label="Categoría" value={detail.category_name || '—'} />
               <DetailRow
@@ -723,6 +757,46 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
                     : 'No vinculado'
                 }
               />
+
+              {detail.is_group && detail.variants.length > 0 && (
+                <Box display="flex" flexDirection="column" gap="2">
+                  <Text fontWeight="medium">Variantes</Text>
+                  <Box display="flex" flexDirection="column" gap="1">
+                    {detail.variants.map((v) => (
+                      <Box
+                        key={v.item_id}
+                        display="flex"
+                        justifyContent="space-between"
+                        gap="2"
+                        padding="2"
+                        backgroundColor="neutral-surface"
+                        borderRadius="2"
+                      >
+                        <Box display="flex" flexDirection="column" gap="1" flex="1">
+                          <Text fontSize="caption" fontWeight="medium">
+                            {Object.entries(v.attributes)
+                              .map(([k, val]) => `${k}: ${val}`)
+                              .join(' · ') || v.name}
+                          </Text>
+                          <Text fontSize="caption" color="neutral-textLow">
+                            SKU: {v.sku || '—'}
+                          </Text>
+                        </Box>
+                        <Box display="flex" flexDirection="column" alignItems="flex-end" gap="1">
+                          <Text fontSize="caption">${Number(v.rate).toLocaleString('es-AR')}</Text>
+                          <Text
+                            fontSize="caption"
+                            color={v.stock_on_hand > 0 ? 'success-textLow' : 'danger-textLow'}
+                          >
+                            Stock: {v.stock_on_hand}
+                          </Text>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
               {detail.description && (
                 <Box display="flex" flexDirection="column" gap="1">
                   <Text fontSize="caption" color="neutral-textLow">

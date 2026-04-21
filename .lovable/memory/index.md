@@ -22,3 +22,4 @@ Edge functions con SERVICE_ROLE para operar sin sesión Supabase (app embebida).
 - [Nimbus Design System](mem://design/nimbus-design-system) — Componentes, iconos y gotchas de la API de Nimbus
 - [App Shell Navigation](mem://design/app-shell-navigation) — Header-based navigation, no sidebar
 - [Sync Productos](mem://features/sync-productos-module) — Edge functions, tablas y UI del módulo de sync productos
+- [Variantes de productos](mem://features/variantes-productos) — Modelo Item Group Zoho ↔ Producto+variantes TN, mapping de atributos y match por SKU
