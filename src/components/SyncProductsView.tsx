@@ -33,7 +33,20 @@ import { ProgressButton } from '@/components/ProgressButton';
 import { FieldHelp } from '@/components/FieldHelp';
 import { toast } from 'sonner';
 
+interface ZohoVariant {
+  item_id: string;
+  name: string;
+  sku: string | null;
+  status: string;
+  rate: number;
+  stock_on_hand: number;
+  attributes: Record<string, string>;
+}
+
 interface ZohoItem {
+  row_id: string; // "group:{gid}" o "item:{id}"
+  is_group: boolean;
+  group_id: string | null;
   item_id: string;
   name: string;
   sku: string | null;
@@ -42,6 +55,7 @@ interface ZohoItem {
   stock_on_hand: number;
   description: string;
   category_name: string | null;
+  variants: ZohoVariant[];
   match_status: 'new' | 'linked' | 'imported' | 'conflict' | 'error' | 'ignored';
   tiendanube_product_id: number | null;
   last_synced_at: string | null;
@@ -54,6 +68,7 @@ interface ImportResult {
   message?: string;
   tiendanube_product_id?: number | null;
   action: string;
+  variants_count?: number;
 }
 
 interface SyncProductsViewProps {
