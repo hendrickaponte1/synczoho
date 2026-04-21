@@ -617,7 +617,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
           <Box display="flex" flexDirection="column" gap="3">
             <Text>
               Se van a sincronizar <strong>{selectedItems.length}</strong> producto(s) de Zoho a
-              Tiendanube:
+              Tiendanube (<strong>{summary.variants}</strong> variante/s en total):
             </Text>
             <Box
               display="flex"
@@ -673,7 +673,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
             overflow="auto"
           >
             {(results || []).map((r) => {
-              const it = items.find((i) => i.item_id === r.zoho_item_id);
+              const it = items.find((i) => i.row_id === r.zoho_item_id);
               return (
                 <Box
                   key={r.zoho_item_id}
@@ -694,6 +694,9 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
                     <Box display="flex" flexDirection="column">
                       <Text fontSize="caption" fontWeight="medium">
                         {it?.name || r.zoho_item_id}
+                        {r.variants_count && r.variants_count > 1
+                          ? ` · ${r.variants_count} variantes`
+                          : ''}
                       </Text>
                       {r.message && (
                         <Text fontSize="caption" color="danger-textLow">
@@ -733,13 +736,17 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
         <Sidebar.Body>
           {detail && (
             <Box display="flex" flexDirection="column" gap="3">
-              <DetailRow label="Item ID Zoho" value={detail.item_id} />
-              <DetailRow label="SKU" value={detail.sku || '—'} />
               <DetailRow
-                label="Precio"
+                label="Tipo"
+                value={detail.is_group ? `Grupo · ${detail.variants.length} variantes` : 'Producto simple'}
+              />
+              <DetailRow label="ID Zoho" value={detail.is_group ? `group:${detail.group_id}` : detail.item_id} />
+              <DetailRow label="SKU(s)" value={detail.sku || '—'} />
+              <DetailRow
+                label="Precio (desde)"
                 value={`$${Number(detail.rate).toLocaleString('es')}`}
               />
-              <DetailRow label="Stock" value={String(detail.stock_on_hand)} />
+              <DetailRow label="Stock total" value={String(detail.stock_on_hand)} />
               <DetailRow label="Estado en Zoho" value={detail.status} />
               <DetailRow label="Categoría" value={detail.category_name || '—'} />
               <DetailRow
@@ -750,6 +757,46 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
                     : 'No vinculado'
                 }
               />
+
+              {detail.is_group && detail.variants.length > 0 && (
+                <Box display="flex" flexDirection="column" gap="2">
+                  <Text fontWeight="medium">Variantes</Text>
+                  <Box display="flex" flexDirection="column" gap="1">
+                    {detail.variants.map((v) => (
+                      <Box
+                        key={v.item_id}
+                        display="flex"
+                        justifyContent="space-between"
+                        gap="2"
+                        padding="2"
+                        backgroundColor="neutral-surface"
+                        borderRadius="2"
+                      >
+                        <Box display="flex" flexDirection="column" gap="1" flex="1">
+                          <Text fontSize="caption" fontWeight="medium">
+                            {Object.entries(v.attributes)
+                              .map(([k, val]) => `${k}: ${val}`)
+                              .join(' · ') || v.name}
+                          </Text>
+                          <Text fontSize="caption" color="neutral-textLow">
+                            SKU: {v.sku || '—'}
+                          </Text>
+                        </Box>
+                        <Box display="flex" flexDirection="column" alignItems="flex-end" gap="1">
+                          <Text fontSize="caption">${Number(v.rate).toLocaleString('es-AR')}</Text>
+                          <Text
+                            fontSize="caption"
+                            color={v.stock_on_hand > 0 ? 'success-textLow' : 'danger-textLow'}
+                          >
+                            Stock: {v.stock_on_hand}
+                          </Text>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
               {detail.description && (
                 <Box display="flex" flexDirection="column" gap="1">
                   <Text fontSize="caption" color="neutral-textLow">
