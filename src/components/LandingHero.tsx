@@ -75,8 +75,12 @@ export function LandingHero() {
 
       <footer className="border-t border-border py-6">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-muted-foreground text-sm text-center">
+          <p className="text-muted-foreground text-sm text-center flex items-center justify-center gap-2">
             Desarrollado para Tiendanube · Integración con Zoho Inventory
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              DB conectada
+            </span>
           </p>
         </div>
       </footer>
