@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Link2, CheckCircle2, RefreshCw, Sparkles, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface ZohoOrg {
   organization_id: string;
@@ -34,6 +35,7 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
   const [orgs, setOrgs] = useState<ZohoOrg[] | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<string>('');
   const [pendingState, setPendingState] = useState<string | null>(null);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   const redirectUri = `${window.location.origin}${ZOHO_REDIRECT_PATH}`;
 
@@ -165,7 +167,7 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
   };
 
   const handleDisconnect = async () => {
-    if (!confirm('¿Desconectar Zoho Inventory de esta tienda?')) return;
+    setConfirmDisconnect(false);
     try {
       const { error } = await supabase.functions.invoke('zoho-disconnect', {
         body: { store_id: storeId },
@@ -304,7 +306,16 @@ export function ZohoConnectCard({ storeId }: ZohoConnectCardProps) {
               </div>
               <p className="text-xs">Org ID: {connection?.organization_id}</p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleDisconnect}>
+            <ConfirmDialog
+              open={confirmDisconnect}
+              title="¿Desconectar Zoho Inventory?"
+              description="Se eliminará la conexión con Zoho Inventory de esta tienda. Podrás volver a conectarla cuando quieras."
+              confirmLabel="Desconectar"
+              onConfirm={handleDisconnect}
+              onCancel={() => setConfirmDisconnect(false)}
+              destructive
+            />
+            <Button variant="outline" size="sm" onClick={() => setConfirmDisconnect(true)}>
               Desconectar
             </Button>
           </>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Box, Card, Title, Text, Tag, Button, Spinner } from '@nimbus-ds/components';
 import { LogOutIcon } from '@nimbus-ds/icons';
 import { ZohoConnectCard } from '@/components/ZohoConnectCard';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -14,9 +15,10 @@ interface ConfigurationViewProps {
 
 export function ConfigurationView({ storeId, storeName, storeMeta, onDisconnect }: ConfigurationViewProps) {
   const [disconnecting, setDisconnecting] = useState(false);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   const handleDisconnect = async () => {
-    if (!confirm('¿Desconectar esta tienda? Se eliminará la conexión con Zoho y el acceso a la app.')) return;
+    setConfirmDisconnect(false);
     setDisconnecting(true);
     try {
       const { error } = await supabase.functions.invoke('tiendanube-disconnect', {
@@ -66,7 +68,16 @@ export function ConfigurationView({ storeId, storeName, storeMeta, onDisconnect 
               </Box>
               {onDisconnect && (
                 <Box>
-                  <Button appearance="danger" onClick={handleDisconnect} disabled={disconnecting}>
+                  <ConfirmDialog
+                    open={confirmDisconnect}
+                    title="¿Desconectar esta tienda?"
+                    description="Se eliminará la conexión con Zoho Inventory y el acceso a la app. Podrás volver a conectarla cuando quieras."
+                    confirmLabel="Desconectar"
+                    onConfirm={handleDisconnect}
+                    onCancel={() => setConfirmDisconnect(false)}
+                    destructive
+                  />
+                  <Button appearance="danger" onClick={() => setConfirmDisconnect(true)} disabled={disconnecting}>
                     {disconnecting ? <Spinner size="small" /> : <LogOutIcon />}
                     {disconnecting ? 'Desconectando...' : 'Desconectar tienda'}
                   </Button>
