@@ -2,3 +2,6 @@ project_id = "ckadkdpycqfvwtwhllxc"
 
 [functions.tiendanube-webhook]
 verify_jwt = false
+
+[functions.get-export-secrets]
+verify_jwt = false
