@@ -72,37 +72,11 @@ export function DashboardView({ storeId, onNavigate }: DashboardViewProps) {
     async function loadMetrics() {
       setLoading(true);
       try {
-        const [products, orders, customers, stock, lastLog] = await Promise.all([
-          supabase.from('product_sync_map').select('status', { count: 'exact', head: false }).eq('store_id', storeId),
-          supabase.from('order_sync_map').select('status', { count: 'exact', head: false }).eq('store_id', storeId),
-          supabase.from('customer_sync_map').select('status', { count: 'exact', head: false }).eq('store_id', storeId),
-          supabase.from('stock_sync_state').select('id', { count: 'exact', head: true }).eq('store_id', storeId),
-          supabase
-            .from('sync_logs')
-            .select('created_at')
-            .eq('store_id', storeId)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
-
-        // Estados reales en BD: 'success', 'linked', 'pending', 'error'
-        const isOk = (s: string) => s === 'success' || s === 'synced' || s === 'linked' || s === 'imported';
-        const productsSynced = (products.data || []).filter((p: any) => isOk(p.status)).length;
-        const productsPending = (products.data || []).filter((p: any) => p.status === 'pending').length;
-        const ordersSynced = (orders.data || []).filter((o: any) => isOk(o.status)).length;
-        const ordersError = (orders.data || []).filter((o: any) => o.status === 'error').length;
-        const customersSynced = (customers.data || []).filter((c: any) => isOk(c.status)).length;
-
-        setMetrics({
-          productsSynced,
-          productsPending,
-          ordersSynced,
-          ordersError,
-          customersSynced,
-          stockSynced: stock.count || 0,
-          lastActivity: lastLog.data?.created_at || null,
+        const { data, error } = await supabase.functions.invoke('dashboard-metrics', {
+          body: { store_id: storeId },
         });
+        if (error) throw error;
+        setMetrics(data.metrics);
       } finally {
         setLoading(false);
       }
