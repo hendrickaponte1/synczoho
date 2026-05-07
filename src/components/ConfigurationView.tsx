@@ -1,6 +1,9 @@
-import { Box, Card, Title, Text, Tag, Button } from '@nimbus-ds/components';
+import { useState } from 'react';
+import { Box, Card, Title, Text, Tag, Button, Spinner } from '@nimbus-ds/components';
 import { LogOutIcon } from '@nimbus-ds/icons';
 import { ZohoConnectCard } from '@/components/ZohoConnectCard';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ConfigurationViewProps {
   storeId: string;
@@ -10,6 +13,25 @@ interface ConfigurationViewProps {
 }
 
 export function ConfigurationView({ storeId, storeName, storeMeta, onDisconnect }: ConfigurationViewProps) {
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  const handleDisconnect = async () => {
+    if (!confirm('¿Desconectar esta tienda? Se eliminará la conexión con Zoho y el acceso a la app.')) return;
+    setDisconnecting(true);
+    try {
+      const { error } = await supabase.functions.invoke('tiendanube-disconnect', {
+        body: { store_id: storeId },
+      });
+      if (error) throw error;
+      toast.success('Tienda desconectada correctamente');
+      onDisconnect?.();
+    } catch (e: any) {
+      toast.error(e.message || 'Error al desconectar la tienda');
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
   return (
     <Box display="flex" flexDirection="column" gap="4">
       <Box display="grid" gap="4" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }}>
@@ -44,8 +66,9 @@ export function ConfigurationView({ storeId, storeName, storeMeta, onDisconnect 
               </Box>
               {onDisconnect && (
                 <Box>
-                  <Button appearance="danger" onClick={onDisconnect}>
-                    <LogOutIcon /> Desconectar tienda
+                  <Button appearance="danger" onClick={handleDisconnect} disabled={disconnecting}>
+                    {disconnecting ? <Spinner size="small" /> : <LogOutIcon />}
+                    {disconnecting ? 'Desconectando...' : 'Desconectar tienda'}
                   </Button>
                 </Box>
               )}
