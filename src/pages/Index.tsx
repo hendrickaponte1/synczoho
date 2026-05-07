@@ -8,6 +8,7 @@ import { SyncProductsView } from '@/components/SyncProductsView';
 import { SyncOrdersView } from '@/components/SyncOrdersView';
 import { SyncStockView } from '@/components/SyncStockView';
 import { SyncCustomersView } from '@/components/SyncCustomersView';
+import { SyncLogsView } from '@/components/SyncLogsView';
 import { useNexo } from '@/components/NexoProvider';
 import { Loader2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +20,7 @@ import {
   StatsIcon,
   UserGroupIcon,
   CogIcon,
+  ClockIcon,
 } from '@nimbus-ds/icons';
 
 export default function Index() {
@@ -233,6 +235,7 @@ export default function Index() {
         { id: 'sync-orders', label: 'Órdenes', icon: <CashIcon /> },
         { id: 'sync-stock', label: 'Stock', icon: <StatsIcon /> },
         { id: 'sync-customers', label: 'Clientes', icon: <UserGroupIcon /> },
+        { id: 'sync-logs', label: 'Historial', icon: <ClockIcon /> },
         { id: 'configuration', label: 'Configuración', icon: <CogIcon /> },
       ]
     : [
@@ -260,6 +263,7 @@ export default function Index() {
       {activeSection === 'sync-orders' && fullyConnected && <SyncOrdersView storeId={storeId} />}
       {activeSection === 'sync-stock' && fullyConnected && <SyncStockView storeId={storeId} />}
       {activeSection === 'sync-customers' && fullyConnected && <SyncCustomersView storeId={storeId} />}
+      {activeSection === 'sync-logs' && fullyConnected && <SyncLogsView storeId={storeId} />}
     </AppShell>
   );
 }

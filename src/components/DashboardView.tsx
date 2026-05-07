@@ -8,6 +8,7 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ChevronRightIcon,
+  ClockIcon,
 } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
@@ -25,6 +26,34 @@ interface Metrics {
   customersSynced: number;
   stockSynced: number;
   lastActivity: string | null;
+}
+
+interface LogEntry {
+  id: string;
+  operation: string;
+  status: 'success' | 'error';
+  message: string;
+  duration_ms: number | null;
+  created_at: string;
+}
+
+const OP_LABEL: Record<string, string> = {
+  zoho_sync_import:   'Importación de productos',
+  order_zoho_create:  'Orden sincronizada',
+  order_sync:         'Orden sincronizada',
+  customer_sync_bulk: 'Clientes sincronizados',
+  stock_sync_run:     'Sincronización de stock',
+  tiendanube_webhook: 'Webhook recibido',
+};
+
+function relTime(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'Ahora mismo';
+  if (mins < 60) return `Hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Hace ${hrs} h`;
+  return `Hace ${Math.floor(hrs / 24)} d`;
 }
 
 const moduleDefs = [
@@ -67,6 +96,8 @@ export function DashboardView({ storeId, onNavigate }: DashboardViewProps) {
   const { settings, loading: loadingSettings } = useSyncSettings(storeId);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recentLogs, setRecentLogs] = useState<LogEntry[]>([]);
+  const [logsLoading, setLogsLoading] = useState(true);
 
   useEffect(() => {
     async function loadMetrics() {
@@ -84,15 +115,25 @@ export function DashboardView({ storeId, onNavigate }: DashboardViewProps) {
     loadMetrics();
   }, [storeId]);
 
+  useEffect(() => {
+    async function loadLogs() {
+      setLogsLoading(true);
+      try {
+        const { data } = await supabase.functions.invoke('sync-logs-list', {
+          body: { store_id: storeId, limit: 5 },
+        });
+        setRecentLogs(data?.logs ?? []);
+      } finally {
+        setLogsLoading(false);
+      }
+    }
+    loadLogs();
+  }, [storeId]);
+
   const isEnabled = (key: string | null): boolean => {
     if (!key) return true;
     if (!settings) return false;
     return Boolean((settings as any)[key]);
-  };
-
-  const formatDate = (iso: string | null) => {
-    if (!iso) return 'Sin actividad';
-    return new Date(iso).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
   };
 
   return (
@@ -124,12 +165,58 @@ export function DashboardView({ storeId, onNavigate }: DashboardViewProps) {
         />
       </Box>
 
+      {/* Mini-feed de actividad reciente */}
       <Card>
         <Card.Header>
-          <Title as="h4" fontSize="h5">Última actividad</Title>
+          <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
+            <Box display="flex" alignItems="center" gap="2">
+              <ClockIcon size="medium" />
+              <Title as="h4" fontSize="h5">Actividad reciente</Title>
+            </Box>
+            <Button appearance="neutral" onClick={() => onNavigate('sync-logs')}>
+              Ver historial completo <ChevronRightIcon />
+            </Button>
+          </Box>
         </Card.Header>
         <Card.Body>
-          <Text>{loading ? 'Cargando…' : formatDate(metrics?.lastActivity ?? null)}</Text>
+          {logsLoading ? (
+            <Box display="flex" justifyContent="center" padding="4"><Spinner /></Box>
+          ) : recentLogs.length === 0 ? (
+            <Text color="neutral-textLow">Sin actividad registrada aún.</Text>
+          ) : (
+            <Box display="flex" flexDirection="column" gap="3">
+              {recentLogs.map((log) => (
+                <Box
+                  key={log.id}
+                  display="flex"
+                  alignItems="flex-start"
+                  justifyContent="space-between"
+                  gap="3"
+                  paddingY="2"
+                  borderBottomWidth="1"
+                  borderStyle="solid"
+                  borderColor="neutral-surfaceHighlight"
+                >
+                  <Box display="flex" flexDirection="column" gap="1" flex="1">
+                    <Box display="flex" alignItems="center" gap="2">
+                      <Tag appearance={log.status === 'success' ? 'success' : 'danger'}>
+                        {log.status === 'success' ? 'OK' : 'Error'}
+                      </Tag>
+                      <Text fontWeight="medium" fontSize="caption">
+                        {OP_LABEL[log.operation] ?? log.operation}
+                      </Text>
+                    </Box>
+                    <Text fontSize="caption" color="neutral-textLow">
+                      {log.message?.slice(0, 100) || '—'}
+                    </Text>
+                  </Box>
+                  <Text fontSize="caption" color="neutral-textLow" textAlign="right">
+                    {relTime(log.created_at)}
+                  </Text>
+                </Box>
+              ))}
+            </Box>
+          )}
         </Card.Body>
       </Card>
 

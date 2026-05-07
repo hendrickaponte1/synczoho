@@ -1,4 +1,5 @@
 // Devuelve los últimos logs de sincronización de una tienda.
+// Soporta filtros por operation y status.
 import { corsHeaders, getAdminClient } from "../_shared/zoho.ts";
 
 Deno.serve(async (req) => {
@@ -8,19 +9,29 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const storeId: string = body.store_id;
     const limit = Math.min(200, Number(body.limit) || 50);
+    const operation: string | null = body.operation || null; // filtro opcional
+    const status: string | null = body.status || null;       // 'success' | 'error'
+
     if (!storeId) {
       return new Response(JSON.stringify({ error: "store_id required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { data, error } = await admin
+
+    let query = admin
       .from("sync_logs")
-      .select("id, operation, zoho_item_id, tiendanube_product_id, status, message, duration_ms, created_at")
+      .select("id, operation, status, message, duration_ms, payload, created_at")
       .eq("store_id", storeId)
       .order("created_at", { ascending: false })
       .limit(limit);
+
+    if (operation) query = query.eq("operation", operation);
+    if (status) query = query.eq("status", status);
+
+    const { data, error } = await query;
     if (error) throw error;
+
     return new Response(JSON.stringify({ logs: data || [] }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
 import { ProgressButton } from '@/components/ProgressButton';
 import { FieldHelp } from '@/components/FieldHelp';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
 
 interface Props { storeId: string }
@@ -23,6 +24,7 @@ export function SyncStockView({ storeId }: Props) {
   const { settings, saving, save } = useSyncSettings(storeId);
   const [running, setRunning] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [lastResult, setLastResult] = useState<{ updated: number; errors: number; total: number; inSync: number } | null>(null);
   const [previewResult, setPreviewResult] = useState<{
@@ -150,7 +152,7 @@ export function SyncStockView({ storeId }: Props) {
                 Vista previa
               </Button>
               <ProgressButton
-                onClick={runSync}
+                onClick={() => setShowConfirm(true)}
                 loading={running}
                 progress={progress}
                 disabled={!settings.stock_enabled}
@@ -226,6 +228,22 @@ export function SyncStockView({ storeId }: Props) {
           El sistema utiliza el SKU como clave de mapeo entre las dos plataformas.
         </Text>
       </Alert>
+
+      <ConfirmDialog
+        open={showConfirm}
+        title="¿Confirmar sincronización de stock?"
+        description={`Esta operación ajustará las cantidades de inventario entre Zoho y Tiendanube según la dirección configurada (${
+          settings.stock_direction === 'zoho_to_tn'
+            ? 'Zoho → Tiendanube'
+            : settings.stock_direction === 'tn_to_zoho'
+            ? 'Tiendanube → Zoho'
+            : 'Bidireccional'
+        }). Usa "Vista previa" primero si quieres revisar los cambios antes de aplicarlos.`}
+        confirmLabel="Sí, sincronizar"
+        cancelLabel="Cancelar"
+        onConfirm={() => { setShowConfirm(false); runSync(); }}
+        onCancel={() => setShowConfirm(false)}
+      />
     </Box>
   );
 }
