@@ -22,6 +22,16 @@ interface CustomerRow {
 
 const PAGE_SIZE = 50;
 
+const parseErrorMsg = (err: string | null): string | null => {
+  if (!err) return null;
+  try {
+    const parsed = JSON.parse(err);
+    return parsed.message || err;
+  } catch {
+    return err;
+  }
+};
+
 export function SyncCustomersView({ storeId }: Props) {
   const { settings, save } = useSyncSettings(storeId);
   const [running, setRunning] = useState(false);
@@ -188,7 +198,7 @@ export function SyncCustomersView({ storeId }: Props) {
                       <Tag appearance={c.status === 'success' ? 'success' : c.status === 'error' ? 'danger' : 'neutral'}>
                         {c.status}
                       </Tag>
-                      {c.last_error && <Text fontSize="caption" color="danger-textLow">{c.last_error.slice(0, 60)}</Text>}
+                      {c.last_error && <Text fontSize="caption" color="danger-textLow">{(parseErrorMsg(c.last_error) ?? '').slice(0, 80)}</Text>}
                     </Table.Cell>
                     <Table.Cell>{c.zoho_contact_id || '—'}</Table.Cell>
                     <Table.Cell>

@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
                 continue;
               }
             } else {
-              throw new Error(JSON.stringify(cJson).slice(0, 300));
+              throw new Error(cJson.message || JSON.stringify(cJson).slice(0, 200));
             }
           }
         }
