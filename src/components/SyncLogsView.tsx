@@ -100,9 +100,13 @@ export function SyncLogsView({ storeId }: Props) {
           <Card.Body>
             <Box display="flex" flexDirection="column" gap="1">
               <Text fontSize="caption" color="neutral-textLow">Exitosos</Text>
-              <Title as="h3" fontSize="h3" color="success-textLow">
+              <Text
+                fontSize="featured"
+                fontWeight="bold"
+                color="success-textLow"
+              >
                 {loading ? '—' : String(logs.filter((l) => l.status === 'success').length)}
-              </Title>
+              </Text>
             </Box>
           </Card.Body>
         </Card>
@@ -110,9 +114,13 @@ export function SyncLogsView({ storeId }: Props) {
           <Card.Body>
             <Box display="flex" flexDirection="column" gap="1">
               <Text fontSize="caption" color="neutral-textLow">Con error</Text>
-              <Title as="h3" fontSize="h3" color={errCount > 0 ? 'danger-textLow' : 'neutral-text'}>
+              <Text
+                fontSize="featured"
+                fontWeight="bold"
+                color={errCount > 0 ? 'danger-textLow' : 'neutral-textLow'}
+              >
                 {loading ? '—' : String(errCount)}
-              </Title>
+              </Text>
             </Box>
           </Card.Body>
         </Card>
@@ -131,7 +139,7 @@ export function SyncLogsView({ storeId }: Props) {
         </Card.Header>
         <Card.Body>
           <Box display="flex" gap="3" flexWrap="wrap" marginBottom="4">
-            <Box minWidth="220px">
+            <Box width={{ xs: '100%', md: 'auto' }}>
               <Select
                 id="filter-op"
                 name="filter-op"
@@ -143,7 +151,7 @@ export function SyncLogsView({ storeId }: Props) {
                 ))}
               </Select>
             </Box>
-            <Box minWidth="180px">
+            <Box width={{ xs: '100%', md: 'auto' }}>
               <Select
                 id="filter-status"
                 name="filter-status"
