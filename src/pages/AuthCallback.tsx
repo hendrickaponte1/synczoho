@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { TIENDANUBE_APP_ID, getEmbeddedAdminAppUrl } from '@/lib/tiendanube';
 import { RefreshCw, Loader2, CheckCircle, XCircle } from 'lucide-react';
 
 export default function AuthCallback() {
@@ -29,12 +30,20 @@ export default function AuthCallback() {
         if (data.success) {
           localStorage.setItem('tiendanube_store_id', data.store_id.toString());
           localStorage.setItem('tiendanube_store_name', data.store_name || 'Mi Tienda');
-          
+          if (data.store_handle) {
+            localStorage.setItem('tiendanube_store_handle', data.store_handle);
+          }
+
           setStatus('success');
           setMessage(`¡Tienda "${data.store_name}" conectada exitosamente!`);
-          
+
           setTimeout(() => {
-            navigate('/', { replace: true });
+            const storeHandle = data.store_handle || localStorage.getItem('tiendanube_store_handle');
+            if (storeHandle) {
+              window.location.href = getEmbeddedAdminAppUrl(storeHandle, TIENDANUBE_APP_ID);
+            } else {
+              navigate('/', { replace: true });
+            }
           }, 2000);
         } else {
           throw new Error(data.error || 'Error desconocido');
