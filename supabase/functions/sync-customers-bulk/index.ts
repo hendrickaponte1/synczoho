@@ -7,7 +7,7 @@ import {
   zohoFetch,
   logSync,
 } from "../_shared/zoho.ts";
-import { getStore, tnFetch } from "../_shared/tiendanube.ts";
+import { getStore, tnFetchWithRetry } from "../_shared/tiendanube.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -24,8 +24,8 @@ Deno.serve(async (req) => {
     const store = await getStore(admin, storeId);
     const conn = await getZohoConnection(admin, storeId);
 
-    // Llamada con tnFetch para poder leer headers (x-total-count)
-    const resp = await tnFetch(store, `/customers?page=${page}&per_page=${limit}`);
+    // Llamada con retry automático en 429; leemos headers (x-total-count)
+    const resp = await tnFetchWithRetry(store, `/customers?page=${page}&per_page=${limit}`);
     const text = await resp.text();
     if (!resp.ok) throw new Error(`Tiendanube ${resp.status}: ${text.slice(0, 300)}`);
     const customers: any[] = text ? JSON.parse(text) : [];

@@ -15,7 +15,6 @@ import {
 } from "../_shared/zoho.ts";
 import {
   getStore,
-  tnFetch,
   tnFetchWithRetry,
   getTnDefaultLocationId,
 } from "../_shared/tiendanube.ts";

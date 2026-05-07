@@ -8,7 +8,7 @@
 // - Si zoho_item_id es un item_id real → producto con 1 variante (caso simple).
 import { corsHeaders, getAdminClient, getZohoConnection, getValidAccessToken, INVENTORY_DOMAINS, logSync, zohoFetch } from "../_shared/zoho.ts";
 import { encodeBase64 } from "https://deno.land/std@0.208.0/encoding/base64.ts";
-import { getTnDefaultLocationId } from "../_shared/tiendanube.ts";
+import { tnFetchWithRetry } from "../_shared/tiendanube.ts";
 
 interface ImportRequest {
   store_id: string;
@@ -32,7 +32,6 @@ const DEFAULT_FIELDS = {
   barcode: false, brand: false, tax: false,
 } as const;
 
-const TN_API_BASE = "https://api.tiendanube.com/v1";
 
 interface ZohoVariantData {
   item_id: string;
@@ -77,12 +76,14 @@ Deno.serve(async (req) => {
       return json({ error: "store_id e items son obligatorios" }, 400);
     }
 
-    const { data: store } = await admin
+    const { data: storeRow } = await admin
       .from("stores")
       .select("store_id, access_token")
       .eq("store_id", storeId)
       .maybeSingle();
-    if (!store) return json({ error: "Store not found" }, 404);
+    if (!storeRow) return json({ error: "Store not found" }, 404);
+    // TiendanubeStore compatible con tnFetchWithRetry
+    const store = { store_id: storeRow.store_id, access_token: storeRow.access_token, store_name: null };
 
     const conn = await getZohoConnection(admin, storeId);
 
@@ -108,9 +109,8 @@ Deno.serve(async (req) => {
             const imgs = await fetchProductImages(admin, conn, product);
             if (imgs.length > 0) payload.images = imgs;
           }
-          const resp = await fetch(`${TN_API_BASE}/${storeId}/products`, {
+          const resp = await tnFetchWithRetry(store, "/products", {
             method: "POST",
-            headers: tnHeaders(store.access_token),
             body: JSON.stringify(payload),
           });
           const created = await resp.json();
@@ -124,9 +124,8 @@ Deno.serve(async (req) => {
             if (F.description) payload.description = { es: product.description || "" };
             if (F.brand && product.brand) payload.brand = product.brand;
             if (Object.keys(payload).length > 0) {
-              const resp = await fetch(`${TN_API_BASE}/${storeId}/products/${tnProductId}`, {
+              const resp = await tnFetchWithRetry(store, `/products/${tnProductId}`, {
                 method: "PUT",
-                headers: tnHeaders(store.access_token),
                 body: JSON.stringify(payload),
               });
               const updated = await resp.json();
@@ -138,9 +137,8 @@ Deno.serve(async (req) => {
             if (F.images) {
               const imgs = await fetchProductImages(admin, conn, product);
               for (const img of imgs) {
-                await fetch(`${TN_API_BASE}/${storeId}/products/${tnProductId}/images`, {
+                await tnFetchWithRetry(store, `/products/${tnProductId}/images`, {
                   method: "POST",
-                  headers: tnHeaders(store.access_token),
                   body: JSON.stringify(img),
                 }).catch(() => {});
               }
@@ -411,16 +409,14 @@ function buildCreatePayload(
 
 // Para update: matchea variantes TN existentes por SKU y actualiza precio/stock.
 async function syncVariantsUpdate(
-  store: { store_id: string; access_token: string },
+  store: { store_id: string; access_token: string; store_name: string | null },
   tnProductId: number,
   p: ZohoProductData,
   F: typeof DEFAULT_FIELDS,
 ) {
   if (!F.price && !F.stock) return;
   // Traer variantes actuales
-  const r = await fetch(`${TN_API_BASE}/${store.store_id}/products/${tnProductId}/variants`, {
-    headers: tnHeaders(store.access_token),
-  });
+  const r = await tnFetchWithRetry(store, `/products/${tnProductId}/variants`);
   if (!r.ok) return;
   const tnVariants: any[] = await r.json();
   const norm = (s: any) => (s ?? "").toString().trim().toUpperCase();
@@ -434,32 +430,23 @@ async function syncVariantsUpdate(
     const tv = bySku.get(norm(v.sku));
     if (!tv) continue;
     const body: Record<string, unknown> = {};
-    if (F.price) body.price = String(v.rate ?? 0);
+    if (F.price) {
+      body.price = String(v.rate ?? 0);
+      if (v.sales_rate != null) body.promotional_price = String(v.sales_rate);
+    }
     if (F.stock) {
       body.stock_management = true;
       body.stock = Number(v.stock_on_hand ?? 0);
     }
-    if (F.price && v.sales_rate != null) {
-      body.promotional_price = String(v.sales_rate);
-    }
     if (Object.keys(body).length === 0) continue;
-    await fetch(`${TN_API_BASE}/${store.store_id}/products/${tnProductId}/variants/${tv.id}`, {
+    await tnFetchWithRetry(store, `/products/${tnProductId}/variants/${tv.id}`, {
       method: "PUT",
-      headers: tnHeaders(store.access_token),
       body: JSON.stringify(body),
     }).catch(() => {});
   }
 }
 
 // ============================================================
-function tnHeaders(token: string) {
-  return {
-    "Content-Type": "application/json",
-    Authentication: `bearer ${token}`,
-    "User-Agent": "TiendaSync (support@tiendasync.app)",
-  };
-}
-
 function tnErr(data: any, status: number) {
   if (!data) return `Tiendanube error ${status}`;
   if (typeof data === "string") return data;
