@@ -100,9 +100,27 @@ export default function Index() {
 
     const id = localStorage.getItem('tiendanube_store_id');
     const name = localStorage.getItem('tiendanube_store_name');
-    setStoreId(id);
-    if (name) setStoreName(name);
-    setLoading(false);
+
+    if (id) {
+      // Verificar que la tienda sigue activa en la DB antes de mostrar el dashboard
+      supabase
+        .functions.invoke('zoho-connection-status', { body: { store_id: id } })
+        .then(({ error }) => {
+          if (error) {
+            // Si la función falla (tienda no encontrada), limpiar y mostrar landing
+            localStorage.removeItem('tiendanube_store_id');
+            localStorage.removeItem('tiendanube_store_name');
+            localStorage.removeItem('tiendanube_store_handle');
+            setStoreId(null);
+          } else {
+            setStoreId(id);
+            if (name) setStoreName(name);
+          }
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
   }, [searchParams, navigate, isEmbedded, isConnected, storeInfo]);
 
   // Verificar estado de Zoho una vez que tengamos storeId
