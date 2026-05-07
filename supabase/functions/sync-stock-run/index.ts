@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const t0 = Date.now();
   try {
-    const { storeId } = await req.json();
+    const { storeId, dryRun = false } = await req.json();
     if (!storeId) {
       return json({ error: "storeId requerido" }, 400);
     }
@@ -112,22 +112,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 5) Auto-vincular en product_sync_map si aún no está
-    for (const p of pairs) {
-      await admin.from("product_sync_map").upsert(
-        {
-          store_id: storeId,
-          zoho_item_id: p.zoho_item_id,
-          zoho_sku: p.zoho_sku,
-          tiendanube_product_id: p.tn_product_id,
-          status: "linked",
-          last_synced_at: new Date().toISOString(),
-        },
-        { onConflict: "store_id,zoho_item_id" },
-      );
+    // 5) Auto-vincular en product_sync_map si aún no está (solo en modo real)
+    if (!dryRun) {
+      for (const p of pairs) {
+        await admin.from("product_sync_map").upsert(
+          {
+            store_id: storeId,
+            zoho_item_id: p.zoho_item_id,
+            zoho_sku: p.zoho_sku,
+            tiendanube_product_id: p.tn_product_id,
+            status: "linked",
+            last_synced_at: new Date().toISOString(),
+          },
+          { onConflict: "store_id,zoho_item_id" },
+        );
+      }
     }
 
-    // 6) Sincronizar stock
+    // 6) Sincronizar stock (o simular en dry_run)
     let updated = 0;
     let inSync = 0;
     let errors = 0;
@@ -141,6 +143,20 @@ Deno.serve(async (req) => {
         } else if (direction === "zoho_to_tn") target = "tn";
         else if (direction === "tn_to_zoho") target = "zoho";
         else target = priority === "zoho" ? "tn" : "zoho";
+
+        if (dryRun) {
+          // Modo simulación: solo reportar qué cambiaría
+          if (target === "tn") {
+            updated++;
+            details.push({ sku: p.zoho_sku, from: p.tn_qty, to: p.zoho_qty, target: "tn", dry_run: true });
+          } else if (target === "zoho") {
+            updated++;
+            details.push({ sku: p.zoho_sku, from: p.zoho_qty, to: p.tn_qty, target: "zoho", dry_run: true });
+          } else {
+            inSync++;
+          }
+          continue;
+        }
 
         if (target === "tn") {
           // TN ignora `stock` si la variante no tiene stock_management = true.
@@ -206,15 +222,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    await logSync(admin, storeId, {
-      operation: "stock_sync_run",
-      status: errors === 0 ? "success" : "error",
-      message: `Vinculados: ${pairs.length} · Actualizados: ${updated} · Ya sincronizados: ${inSync} · Errores: ${errors} · Sin match en TN: ${unmatched.length}`,
-      duration_ms: Date.now() - t0,
-      payload: { updated, inSync, errors, total: pairs.length, unmatched: unmatched.slice(0, 50) },
-    });
+    if (!dryRun) {
+      await logSync(admin, storeId, {
+        operation: "stock_sync_run",
+        status: errors === 0 ? "success" : "error",
+        message: `Vinculados: ${pairs.length} · Actualizados: ${updated} · Ya sincronizados: ${inSync} · Errores: ${errors} · Sin match en TN: ${unmatched.length}`,
+        duration_ms: Date.now() - t0,
+        payload: { updated, inSync, errors, total: pairs.length, unmatched: unmatched.slice(0, 50) },
+      });
+    }
 
     return json({
+      dry_run: dryRun,
       total: pairs.length,
       updated,
       inSync,

@@ -105,6 +105,29 @@ Deno.serve(async (req) => {
             if (cResp.ok && cJson.contact?.contact_id) {
               zohoId = cJson.contact.contact_id;
               created++;
+            } else if (cJson.code === 3062) {
+              // Nombre duplicado en Zoho — buscar por nombre y vincular
+              const contactName = c.name || email;
+              const searchResp = await zohoFetch(
+                admin,
+                conn,
+                `/inventory/v1/contacts?contact_name=${encodeURIComponent(contactName)}&contact_type=customer`,
+              );
+              const searchJson = await searchResp.json();
+              const existingContact = searchJson.contacts?.[0];
+              if (existingContact?.contact_id) {
+                zohoId = existingContact.contact_id;
+                linked++;
+              } else {
+                // No se puede resolver — marcar como ignorado para no reintentar
+                skipped++;
+                details.push({ email, status: "skipped", reason: "nombre duplicado en Zoho sin coincidencia" });
+                await admin.from("customer_sync_map").upsert(
+                  { store_id: storeId, tiendanube_customer_id: c.id, email, status: "skipped", last_error: "Zoho 3062: nombre duplicado" },
+                  { onConflict: "store_id,email" },
+                );
+                continue;
+              }
             } else {
               throw new Error(JSON.stringify(cJson).slice(0, 300));
             }

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import {
-  Box, Card, Title, Text, Checkbox, Select, Spinner, Alert, Tag,
+  Box, Card, Title, Text, Checkbox, Select, Spinner, Alert, Tag, Table, Button,
 } from '@nimbus-ds/components';
-import { RedoIcon } from '@nimbus-ds/icons';
+import { RedoIcon, EyeIcon } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
 import { ProgressButton } from '@/components/ProgressButton';
@@ -11,22 +11,59 @@ import { toast } from 'sonner';
 
 interface Props { storeId: string }
 
+interface PreviewItem {
+  sku: string;
+  from: number;
+  to: number;
+  target: 'tn' | 'zoho';
+  dry_run?: boolean;
+}
+
 export function SyncStockView({ storeId }: Props) {
   const { settings, saving, save } = useSyncSettings(storeId);
   const [running, setRunning] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
-  const [lastResult, setLastResult] = useState<{ updated: number; errors: number; total: number } | null>(null);
+  const [lastResult, setLastResult] = useState<{ updated: number; errors: number; total: number; inSync: number } | null>(null);
+  const [previewResult, setPreviewResult] = useState<{
+    total: number; updated: number; inSync: number; unmatched: number; details: PreviewItem[];
+  } | null>(null);
+
+  const runPreview = async () => {
+    setPreviewing(true);
+    setPreviewResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-stock-run', {
+        body: { storeId, dryRun: true },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setPreviewResult({
+        total: data.total,
+        updated: data.updated,
+        inSync: data.inSync,
+        unmatched: data.unmatched,
+        details: (data.details || []).filter((d: any) => d.dry_run),
+      });
+      toast.success(`Vista previa lista: ${data.updated} cambios pendientes`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al generar la vista previa');
+    } finally {
+      setPreviewing(false);
+    }
+  };
 
   const runSync = async () => {
     setRunning(true);
     setLastResult(null);
+    setPreviewResult(null);
     setProgress({ current: 0, total: 0 });
     try {
       const { data, error } = await supabase.functions.invoke('sync-stock-run', { body: { storeId } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setProgress({ current: data.total || 0, total: data.total || 0 });
-      setLastResult({ updated: data.updated, errors: data.errors, total: data.total });
+      setLastResult({ updated: data.updated, errors: data.errors, total: data.total, inSync: data.inSync });
       toast.success(`Sincronización completa: ${data.updated} actualizados, ${data.errors} errores`);
     } catch (e: any) {
       toast.error(e?.message || 'Error en la sincronización de stock');
@@ -104,27 +141,80 @@ export function SyncStockView({ storeId }: Props) {
         <Card.Header>
           <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
             <Title as="h4" fontSize="h5">Ejecutar sincronización</Title>
-            <ProgressButton
-              onClick={runSync}
-              loading={running}
-              progress={progress}
-              disabled={!settings.stock_enabled}
-              icon={<RedoIcon />}
-              loadingLabel="Sincronizando"
-            >
-              Sincronizar ahora
-            </ProgressButton>
+            <Box display="flex" gap="2" alignItems="center">
+              <Button
+                onClick={runPreview}
+                disabled={!settings.stock_enabled || previewing || running}
+              >
+                {previewing ? <Spinner size="small" /> : <EyeIcon />}
+                Vista previa
+              </Button>
+              <ProgressButton
+                onClick={runSync}
+                loading={running}
+                progress={progress}
+                disabled={!settings.stock_enabled}
+                icon={<RedoIcon />}
+                loadingLabel="Sincronizando"
+              >
+                Sincronizar ahora
+              </ProgressButton>
+            </Box>
           </Box>
         </Card.Header>
         <Card.Body>
           <Text>
-            Recorre todos los productos vinculados en el módulo "Productos" y ajusta el stock según la dirección configurada.
+            Recorre todos los productos con SKU coincidente entre Zoho y Tiendanube y ajusta el stock según la dirección configurada.
+            Usa <strong>Vista previa</strong> para ver qué cambiaría antes de aplicar.
           </Text>
           {lastResult && (
             <Box marginTop="3" display="flex" gap="2" flexWrap="wrap">
               <Tag appearance="primary">Total: {lastResult.total}</Tag>
               <Tag appearance="success">Actualizados: {lastResult.updated}</Tag>
+              <Tag appearance="neutral">Ya sincronizados: {lastResult.inSync}</Tag>
               <Tag appearance={lastResult.errors > 0 ? 'danger' : 'neutral'}>Errores: {lastResult.errors}</Tag>
+            </Box>
+          )}
+          {previewResult && (
+            <Box marginTop="4" display="flex" flexDirection="column" gap="3">
+              <Box display="flex" gap="2" flexWrap="wrap">
+                <Tag appearance="primary">Vinculados: {previewResult.total}</Tag>
+                <Tag appearance={previewResult.updated > 0 ? 'warning' : 'success'}>
+                  Cambios pendientes: {previewResult.updated}
+                </Tag>
+                <Tag appearance="neutral">Ya en sync: {previewResult.inSync}</Tag>
+                <Tag appearance={previewResult.unmatched > 0 ? 'warning' : 'neutral'}>
+                  Sin match SKU: {previewResult.unmatched}
+                </Tag>
+              </Box>
+              {previewResult.details.length > 0 && (
+                <Table>
+                  <Table.Head>
+                    <Table.Row>
+                      <Table.Cell as="th">SKU</Table.Cell>
+                      <Table.Cell as="th">Destino</Table.Cell>
+                      <Table.Cell as="th">Stock actual</Table.Cell>
+                      <Table.Cell as="th">Stock nuevo</Table.Cell>
+                    </Table.Row>
+                  </Table.Head>
+                  <Table.Body>
+                    {previewResult.details.map((d, i) => (
+                      <Table.Row key={i}>
+                        <Table.Cell>{d.sku}</Table.Cell>
+                        <Table.Cell>
+                          <Tag appearance="neutral">{d.target === 'tn' ? 'Tiendanube' : 'Zoho'}</Tag>
+                        </Table.Cell>
+                        <Table.Cell>{d.from}</Table.Cell>
+                        <Table.Cell>
+                          <Text color={d.to > d.from ? 'success-textLow' : 'danger-textLow'} fontWeight="bold">
+                            {d.to}
+                          </Text>
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table>
+              )}
             </Box>
           )}
         </Card.Body>

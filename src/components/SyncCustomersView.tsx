@@ -29,17 +29,14 @@ export function SyncCustomersView({ storeId }: Props) {
   const [skipExisting, setSkipExisting] = useState(true);
   const [history, setHistory] = useState<CustomerRow[]>([]);
   const [lastResult, setLastResult] = useState<{
-    created: number; linked: number; skipped: number; errors: number; total: number;
+    created: number; linked: number; skipped: number; errors: number; total: number; totalCount: number;
   } | null>(null);
 
   const loadHistory = async () => {
-    const { data } = await supabase
-      .from('customer_sync_map')
-      .select('id, email, zoho_contact_id, status, last_error, last_synced_at')
-      .eq('store_id', storeId)
-      .order('last_synced_at', { ascending: false })
-      .limit(50);
-    setHistory((data as CustomerRow[]) || []);
+    const { data } = await supabase.functions.invoke('customers-history', {
+      body: { store_id: storeId, limit: 50 },
+    });
+    setHistory((data?.customers as CustomerRow[]) || []);
   };
 
   useEffect(() => { loadHistory(); /* eslint-disable-next-line */ }, [storeId]);
@@ -88,6 +85,7 @@ export function SyncCustomersView({ storeId }: Props) {
         skipped: totalSkipped,
         errors: totalErrors,
         total: totalProcessed,
+        totalCount: knownTotal,
       });
       toast.success(
         `Clientes: ${totalCreated} creados · ${totalLinked} vinculados · ${totalSkipped} omitidos · ${totalErrors} errores`,
@@ -155,7 +153,7 @@ export function SyncCustomersView({ storeId }: Props) {
           </Text>
           {lastResult && (
             <Box marginTop="3" display="flex" gap="2" flexWrap="wrap">
-              <Tag appearance="primary">Total procesados: {lastResult.total}</Tag>
+              <Tag appearance="primary">Procesados: {lastResult.total} de {lastResult.totalCount || lastResult.total}</Tag>
               <Tag appearance="success">Creados: {lastResult.created}</Tag>
               <Tag appearance="primary">Vinculados: {lastResult.linked}</Tag>
               <Tag appearance="neutral">Omitidos: {lastResult.skipped}</Tag>
