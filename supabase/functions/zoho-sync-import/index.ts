@@ -8,6 +8,7 @@
 // - Si zoho_item_id es un item_id real → producto con 1 variante (caso simple).
 import { corsHeaders, getAdminClient, getZohoConnection, getValidAccessToken, INVENTORY_DOMAINS, logSync, zohoFetch } from "../_shared/zoho.ts";
 import { encodeBase64 } from "https://deno.land/std@0.208.0/encoding/base64.ts";
+import { getTnDefaultLocationId } from "../_shared/tiendanube.ts";
 
 interface ImportRequest {
   store_id: string;
@@ -37,7 +38,8 @@ interface ZohoVariantData {
   item_id: string;
   name: string;
   sku: string | null;
-  rate: number;
+  rate: number;           // precio de lista (price en TN)
+  sales_rate: number | null; // precio de venta (promotional_price en TN si distinto de rate)
   stock_on_hand: number;
   weight: number | null;
   length: number | null;
@@ -271,19 +273,26 @@ async function loadZohoProduct(
       if (n) attrNames.push(String(n));
     }
 
-    const variants: ZohoVariantData[] = itemsRaw.map((it: any) => ({
-      item_id: String(it.item_id),
-      name: it.name,
-      sku: it.sku || null,
-      rate: Number(it.rate ?? 0),
-      stock_on_hand: Number(it.stock_on_hand ?? it.actual_available_stock ?? 0),
-      weight: it.weight != null ? Number(it.weight) : null,
-      length: it.length != null ? Number(it.length) : null,
-      width: it.width != null ? Number(it.width) : null,
-      height: it.height != null ? Number(it.height) : null,
-      upc: it.upc || null,
-      attributes: extractVariantAttrs(it, ig, attrNames),
-    }));
+    const variants: ZohoVariantData[] = itemsRaw.map((it: any) => {
+      const rate = Number(it.rate ?? 0);
+      const salesRate = it.sales_rate != null ? Number(it.sales_rate) : null;
+      return {
+        item_id: String(it.item_id),
+        name: it.name,
+        sku: it.sku || null,
+        rate,
+        // sales_rate es el precio de venta real; si difiere del rate (precio de lista),
+        // se mapea como promotional_price en TN
+        sales_rate: salesRate !== null && salesRate !== rate ? salesRate : null,
+        stock_on_hand: Number(it.stock_on_hand ?? it.actual_available_stock ?? 0),
+        weight: it.weight != null ? Number(it.weight) : null,
+        length: it.length != null ? Number(it.length) : null,
+        width: it.width != null ? Number(it.width) : null,
+        height: it.height != null ? Number(it.height) : null,
+        upc: it.upc || null,
+        attributes: extractVariantAttrs(it, ig, attrNames),
+      };
+    });
 
     const first = itemsRaw[0];
     return {
@@ -306,6 +315,8 @@ async function loadZohoProduct(
   const j = await r.json();
   if (!r.ok) throw new Error(`Zoho item ${zohoItemId}: ${j?.message || r.statusText}`);
   const it = j.item;
+  const rate = Number(it.rate ?? 0);
+  const salesRate = it.sales_rate != null ? Number(it.sales_rate) : null;
   return {
     sync_key: String(it.item_id),
     is_group: false,
@@ -320,7 +331,8 @@ async function loadZohoProduct(
       item_id: String(it.item_id),
       name: it.name,
       sku: it.sku || null,
-      rate: Number(it.rate ?? 0),
+      rate,
+      sales_rate: salesRate !== null && salesRate !== rate ? salesRate : null,
       stock_on_hand: Number(it.stock_on_hand ?? 0),
       weight: it.weight != null ? Number(it.weight) : null,
       length: it.length != null ? Number(it.length) : null,
@@ -367,7 +379,13 @@ function buildCreatePayload(
 
   payload.variants = p.variants.map((v) => {
     const tnVar: Record<string, any> = {};
-    if (F.price) tnVar.price = String(v.rate ?? 0);
+    if (F.price) {
+      // Si hay sales_rate diferente al rate: rate = precio de lista, sales_rate = precio de venta
+      tnVar.price = String(v.rate ?? 0);
+      if (v.sales_rate != null) {
+        tnVar.promotional_price = String(v.sales_rate);
+      }
+    }
     if (F.stock) {
       tnVar.stock_management = true;
       tnVar.stock = Number(v.stock_on_hand ?? 0);
@@ -420,6 +438,9 @@ async function syncVariantsUpdate(
     if (F.stock) {
       body.stock_management = true;
       body.stock = Number(v.stock_on_hand ?? 0);
+    }
+    if (F.price && v.sales_rate != null) {
+      body.promotional_price = String(v.sales_rate);
     }
     if (Object.keys(body).length === 0) continue;
     await fetch(`${TN_API_BASE}/${store.store_id}/products/${tnProductId}/variants/${tv.id}`, {

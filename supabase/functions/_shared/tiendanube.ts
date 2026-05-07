@@ -24,6 +24,10 @@ export async function getStore(
   return data as TiendanubeStore;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function tnFetch(
   store: TiendanubeStore,
   path: string,
@@ -39,15 +43,73 @@ export async function tnFetch(
   return await fetch(url, { ...init, headers });
 }
 
+/**
+ * tnFetch con reintentos automáticos en 429 (Leaky Bucket: 2 req/s, bucket 40).
+ * - Respeta el header Retry-After si está presente.
+ * - Backoff exponencial: 1s → 2s → 4s → 8s.
+ * - Si x-rate-limit-request-left < 5, agrega una pausa preventiva de 500ms.
+ */
+export async function tnFetchWithRetry(
+  store: TiendanubeStore,
+  path: string,
+  init: RequestInit = {},
+  maxRetries = 4,
+): Promise<Response> {
+  let attempt = 0;
+  while (true) {
+    const resp = await tnFetch(store, path, init);
+
+    // Pausa preventiva si queda poca cuota
+    const remaining = Number(resp.headers.get("x-rate-limit-request-left") ?? 999);
+    if (remaining > 0 && remaining < 5) {
+      await sleep(600);
+    }
+
+    if (resp.status !== 429 || attempt >= maxRetries) {
+      return resp;
+    }
+
+    // 429 – backoff exponencial
+    const retryAfter = Number(resp.headers.get("Retry-After") ?? 0);
+    const waitMs = retryAfter > 0
+      ? retryAfter * 1000
+      : Math.min(1000 * Math.pow(2, attempt), 16_000);
+
+    console.warn(`[TN] Rate limited. Reintento ${attempt + 1}/${maxRetries} en ${waitMs}ms`);
+    await sleep(waitMs);
+    attempt++;
+  }
+}
+
 export async function tnFetchJson<T = any>(
   store: TiendanubeStore,
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const resp = await tnFetch(store, path, init);
+  const resp = await tnFetchWithRetry(store, path, init);
   const text = await resp.text();
   if (!resp.ok) {
     throw new Error(`Tiendanube API ${resp.status}: ${text.slice(0, 500)}`);
   }
   return text ? JSON.parse(text) : ({} as T);
+}
+
+/**
+ * Devuelve el location_id principal de la tienda (primer depósito activo).
+ * Retorna null si no se puede obtener (ej: el endpoint no existe en el plan).
+ */
+export async function getTnDefaultLocationId(
+  store: TiendanubeStore,
+): Promise<number | null> {
+  try {
+    const resp = await tnFetch(store, "/locations");
+    if (!resp.ok) return null;
+    const locs: any[] = await resp.json();
+    if (Array.isArray(locs) && locs.length > 0) {
+      return locs[0].id ?? null;
+    }
+  } catch {
+    // silencioso — algunos planes no tienen este endpoint
+  }
+  return null;
 }
