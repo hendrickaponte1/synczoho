@@ -220,7 +220,8 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
             .filter(Boolean) as ZohoItem[])
         : selectedItems;
 
-      setImportProgress({ current: 0, total: target.length });
+      // Modo shimmer indeterminado mientras la edge function procesa (total: 0)
+      setImportProgress({ current: 0, total: 0 });
 
       const payload = target.map((it) => {
         let action: 'create' | 'update' | 'link';
@@ -229,16 +230,11 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
         else if (it.match_status === 'conflict' && it.tiendanube_product_id) action = 'link';
         else action = 'create';
         return {
-          zoho_item_id: it.row_id, // backend resuelve "group:{gid}" o item_id
+          zoho_item_id: it.row_id,
           action,
           tiendanube_product_id: it.tiendanube_product_id,
         };
       });
-
-      // Animación visual del progreso (la edge function procesa todo en una llamada)
-      const tick = setInterval(() => {
-        setImportProgress((p) => (p && p.current < p.total - 1 ? { ...p, current: p.current + 1 } : p));
-      }, 250);
 
       const { data, error: e } = await supabase.functions.invoke('zoho-sync-import', {
         body: {
@@ -249,9 +245,9 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
           overwrite: settings?.products_overwrite_existing,
         },
       });
-      clearInterval(tick);
       if (e) throw e;
       if (data?.error) throw new Error(data.error);
+      // Mostrar 100% brevemente al terminar
       setImportProgress({ current: target.length, total: target.length });
       setResults(data.results || []);
       const okCount = (data.results || []).filter((r: ImportResult) => r.status === 'success').length;
