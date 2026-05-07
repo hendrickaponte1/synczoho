@@ -184,20 +184,22 @@ export function DashboardView({ storeId, onNavigate }: DashboardViewProps) {
           ) : recentLogs.length === 0 ? (
             <Text color="neutral-textLow">Sin actividad registrada aún.</Text>
           ) : (
-            <Box display="flex" flexDirection="column" gap="3">
-              {recentLogs.map((log) => (
-                <Box
+            <Box display="flex" flexDirection="column" gap="0">
+              {recentLogs.map((log, i) => (
+                <div
                   key={log.id}
-                  display="flex"
-                  alignItems="flex-start"
-                  justifyContent="space-between"
-                  gap="3"
-                  paddingY="2"
-                  borderBottomWidth="1"
-                  borderStyle="solid"
-                  borderColor="neutral-surfaceHighlight"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    padding: '10px 0',
+                    borderBottom: i < recentLogs.length - 1
+                      ? '1px solid var(--nimbus-color-neutral-surface-highlight, #eee)'
+                      : 'none',
+                  }}
                 >
-                  <Box display="flex" flexDirection="column" gap="1" flex="1">
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <Box display="flex" alignItems="center" gap="2">
                       <Tag appearance={log.status === 'success' ? 'success' : 'danger'}>
                         {log.status === 'success' ? 'OK' : 'Error'}
@@ -209,11 +211,11 @@ export function DashboardView({ storeId, onNavigate }: DashboardViewProps) {
                     <Text fontSize="caption" color="neutral-textLow">
                       {log.message?.slice(0, 100) || '—'}
                     </Text>
-                  </Box>
-                  <Text fontSize="caption" color="neutral-textLow" textAlign="right">
+                  </div>
+                  <Text fontSize="caption" color="neutral-textLow">
                     {relTime(log.created_at)}
                   </Text>
-                </Box>
+                </div>
               ))}
             </Box>
           )}

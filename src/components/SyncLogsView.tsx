@@ -19,9 +19,10 @@ interface LogEntry {
 
 const OPERATION_LABELS: Record<string, string> = {
   zoho_sync_import:       'Importación de productos',
+  import_update:          'Actualización de producto',
   order_zoho_create:      'Sincronización de orden',
   order_sync:             'Sincronización de orden',
-  customer_sync_bulk:     'Sincronización masiva de clientes',
+  customer_sync_bulk:     'Sincronización de clientes',
   stock_sync_run:         'Sincronización de stock',
   tiendanube_webhook:     'Webhook recibido',
   dashboard_metrics:      'Métricas del dashboard',
@@ -29,7 +30,7 @@ const OPERATION_LABELS: Record<string, string> = {
 
 const OPERATION_OPTIONS = [
   { value: '', label: 'Todas las operaciones' },
-  { value: 'zoho_sync_import', label: 'Productos' },
+  { value: 'zoho_sync_import', label: 'Importación de productos' },
   { value: 'order_zoho_create', label: 'Órdenes' },
   { value: 'customer_sync_bulk', label: 'Clientes' },
   { value: 'stock_sync_run', label: 'Stock' },
@@ -46,11 +47,11 @@ function formatDate(iso: string) {
 function relativeTime(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'hace un momento';
-  if (mins < 60) return `hace ${mins} min`;
+  if (mins < 1) return 'Ahora mismo';
+  if (mins < 60) return `Hace ${mins} min`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `hace ${hrs} h`;
-  return `hace ${Math.floor(hrs / 24)} d`;
+  if (hrs < 24) return `Hace ${hrs} h`;
+  return `Hace ${Math.floor(hrs / 24)} d`;
 }
 
 export function SyncLogsView({ storeId }: Props) {
@@ -82,11 +83,12 @@ export function SyncLogsView({ storeId }: Props) {
 
   const refresh = () => load(filterOp, filterStatus, limit);
 
+  const successCount = logs.filter((l) => l.status === 'success').length;
   const errCount = logs.filter((l) => l.status === 'error').length;
 
   return (
     <Box display="flex" flexDirection="column" gap="4">
-      {/* Resumen */}
+      {/* Resumen numérico */}
       <Box display="grid" gap="4" gridTemplateColumns={{ xs: '1fr 1fr', md: 'repeat(3, 1fr)' }}>
         <Card>
           <Card.Body>
@@ -100,13 +102,7 @@ export function SyncLogsView({ storeId }: Props) {
           <Card.Body>
             <Box display="flex" flexDirection="column" gap="1">
               <Text fontSize="caption" color="neutral-textLow">Exitosos</Text>
-              <Text
-                fontSize="featured"
-                fontWeight="bold"
-                color="success-textLow"
-              >
-                {loading ? '—' : String(logs.filter((l) => l.status === 'success').length)}
-              </Text>
+              <Title as="h3" fontSize="h3">{loading ? '—' : String(successCount)}</Title>
             </Box>
           </Card.Body>
         </Card>
@@ -114,19 +110,16 @@ export function SyncLogsView({ storeId }: Props) {
           <Card.Body>
             <Box display="flex" flexDirection="column" gap="1">
               <Text fontSize="caption" color="neutral-textLow">Con error</Text>
-              <Text
-                fontSize="featured"
-                fontWeight="bold"
-                color={errCount > 0 ? 'danger-textLow' : 'neutral-textLow'}
-              >
-                {loading ? '—' : String(errCount)}
-              </Text>
+              <Title as="h3" fontSize="h3">{loading ? '—' : String(errCount)}</Title>
+              {!loading && errCount > 0 && (
+                <Text fontSize="caption" color="danger-textLow">Requieren atención</Text>
+              )}
             </Box>
           </Card.Body>
         </Card>
       </Box>
 
-      {/* Filtros */}
+      {/* Tabla de logs */}
       <Card>
         <Card.Header>
           <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
@@ -138,8 +131,9 @@ export function SyncLogsView({ storeId }: Props) {
           </Box>
         </Card.Header>
         <Card.Body>
+          {/* Filtros */}
           <Box display="flex" gap="3" flexWrap="wrap" marginBottom="4">
-            <Box width={{ xs: '100%', md: 'auto' }}>
+            <Box>
               <Select
                 id="filter-op"
                 name="filter-op"
@@ -151,7 +145,7 @@ export function SyncLogsView({ storeId }: Props) {
                 ))}
               </Select>
             </Box>
-            <Box width={{ xs: '100%', md: 'auto' }}>
+            <Box>
               <Select
                 id="filter-status"
                 name="filter-status"
@@ -189,7 +183,9 @@ export function SyncLogsView({ storeId }: Props) {
                   {logs.map((log) => (
                     <Table.Row key={log.id}>
                       <Table.Cell>
-                        <Text fontWeight="medium" fontSize="caption">{formatOp(log.operation)}</Text>
+                        <Text fontWeight="medium" fontSize="caption">
+                          {formatOp(log.operation)}
+                        </Text>
                       </Table.Cell>
                       <Table.Cell>
                         <Tag appearance={log.status === 'success' ? 'success' : 'danger'}>
@@ -197,7 +193,10 @@ export function SyncLogsView({ storeId }: Props) {
                         </Tag>
                       </Table.Cell>
                       <Table.Cell>
-                        <Text fontSize="caption" color={log.status === 'error' ? 'danger-textLow' : 'neutral-text'}>
+                        <Text
+                          fontSize="caption"
+                          color={log.status === 'error' ? 'danger-textLow' : 'neutral-textLow'}
+                        >
                           {log.message?.slice(0, 120) || '—'}
                         </Text>
                       </Table.Cell>
@@ -207,8 +206,10 @@ export function SyncLogsView({ storeId }: Props) {
                         </Text>
                       </Table.Cell>
                       <Table.Cell>
-                        <Text fontSize="caption" color="neutral-textLow" title={formatDate(log.created_at)}>
-                          {relativeTime(log.created_at)}
+                        <Text fontSize="caption" color="neutral-textLow">
+                          <span title={formatDate(log.created_at)}>
+                            {relativeTime(log.created_at)}
+                          </span>
                         </Text>
                       </Table.Cell>
                     </Table.Row>
