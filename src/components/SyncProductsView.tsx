@@ -102,6 +102,7 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
   const [stockFilter, setStockFilter] = useState<string>('');
   const [matchFilter, setMatchFilter] = useState<string>('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selectionData, setSelectionData] = useState<Map<string, ZohoItem>>(new Map());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [publishOnImport, setPublishOnImport] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -131,9 +132,17 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
       });
       if (e) throw e;
       if (data?.error) throw new Error(data.error);
-      setItems(data.items || []);
+      const newItems: ZohoItem[] = data.items || [];
+      setItems(newItems);
       setHasMore(!!data.page_context?.has_more_page);
-      setSelected(new Set());
+      // Actualizar cache con datos frescos de items ya seleccionados
+      setSelectionData(prev => {
+        const next = new Map(prev);
+        newItems.forEach(item => {
+          if (next.has(item.row_id)) next.set(item.row_id, item);
+        });
+        return next;
+      });
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Error al cargar items de Zoho');
@@ -144,6 +153,9 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
 
   useEffect(() => {
     setPage(1);
+    // Limpiar selección al cambiar filtros/búsqueda
+    setSelected(new Set());
+    setSelectionData(new Map());
     load(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeId, search, statusFilter, stockFilter, matchFilter]);
@@ -154,20 +166,37 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
   }, [page]);
 
   const toggle = (id: string) => {
-    const next = new Set(selected);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelected(next);
+    const nextSelected = new Set(selected);
+    const nextData = new Map(selectionData);
+    if (nextSelected.has(id)) {
+      nextSelected.delete(id);
+      nextData.delete(id);
+    } else {
+      nextSelected.add(id);
+      const item = items.find((i) => i.row_id === id);
+      if (item) nextData.set(id, item);
+    }
+    setSelected(nextSelected);
+    setSelectionData(nextData);
   };
 
   const toggleAll = () => {
-    if (selected.size === items.length) setSelected(new Set());
-    else setSelected(new Set(items.map((i) => i.row_id)));
+    const allCurrentSelected = items.every((i) => selected.has(i.row_id));
+    const nextSelected = new Set(selected);
+    const nextData = new Map(selectionData);
+    if (allCurrentSelected) {
+      items.forEach((i) => { nextSelected.delete(i.row_id); nextData.delete(i.row_id); });
+    } else {
+      items.forEach((i) => { nextSelected.add(i.row_id); nextData.set(i.row_id, i); });
+    }
+    setSelected(nextSelected);
+    setSelectionData(nextData);
   };
 
+  // selectedItems incluye items de todas las páginas (usando el cache)
   const selectedItems = useMemo(
-    () => items.filter((i) => selected.has(i.row_id)),
-    [items, selected],
+    () => Array.from(selectionData.values()),
+    [selectionData],
   );
 
   const summary = useMemo(() => {
@@ -229,6 +258,8 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
       const errCount = (data.results || []).filter((r: ImportResult) => r.status === 'error').length;
       if (errCount === 0) toast.success(`${okCount} producto(s) sincronizado(s)`);
       else toast.warning(`${okCount} correctos · ${errCount} con error`);
+      setSelected(new Set());
+      setSelectionData(new Map());
       load();
     } catch (err: any) {
       toast.error(err.message || 'Error en la importación');
