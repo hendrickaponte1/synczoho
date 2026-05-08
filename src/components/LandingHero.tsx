@@ -41,7 +41,7 @@ export function LandingHero() {
               Tiendanube Partner
             </span>
             <Button size="sm" onClick={handleConnect} className="font-semibold">
-              Instalar gratis
+              Instalar ahora
               <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
             </Button>
           </div>
@@ -83,12 +83,12 @@ export function LandingHero() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Button size="lg" onClick={handleConnect} className="px-8 h-12 text-base font-semibold rounded-lg w-full sm:w-auto">
-                  Conectar mi tienda gratis
+                  Conectar mi tienda
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  30 días gratis · Sin tarjeta de crédito
+                  Instalación rápida · Sin configuraciones complejas
                 </span>
               </div>
             </div>
@@ -184,7 +184,7 @@ export function LandingHero() {
             <div className="text-center mb-12">
               <Badge variant="outline" className="mb-4 text-primary border-primary/30">Funcionalidades</Badge>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-4">
-                Todo lo que necesitás para gestionar
+                Todo lo que necesitas para gestionar
               </h2>
               <p className="text-muted-foreground max-w-xl mx-auto">
                 Cuatro módulos integrados que eliminan la doble carga de datos entre tu tienda y Zoho Inventory.
@@ -211,7 +211,7 @@ export function LandingHero() {
                 title="Importación de productos"
                 direction="Zoho → Tiendanube"
                 directionColor="text-violet-600"
-                description="Importá tu catálogo de Zoho Inventory a Tiendanube con matching automático por SKU. Ves el estado de cada producto antes de confirmar."
+                description="Importa tu catálogo de Zoho Inventory a Tiendanube con matching automático por SKU. Ve el estado de cada producto antes de confirmar."
                 features={[
                   'Matching inteligente por SKU',
                   'Acciones: crear, actualizar o solo vincular',
@@ -225,7 +225,7 @@ export function LandingHero() {
                 title="Sincronización de stock"
                 direction="Zoho → Tiendanube"
                 directionColor="text-violet-600"
-                description="Mantené el inventario de tu tienda siempre actualizado con los niveles reales de Zoho Inventory. Revisá los cambios antes de aplicarlos."
+                description="Mantén el inventario de tu tienda siempre actualizado con los niveles reales de Zoho Inventory. Revisa los cambios antes de aplicarlos."
                 features={[
                   'Vista previa antes de sincronizar',
                   'Bulk endpoint: hasta 100 productos por llamada',
@@ -270,20 +270,20 @@ export function LandingHero() {
                 {
                   step: '01',
                   icon: ShoppingCart,
-                  title: 'Instalá desde Tiendanube',
-                  desc: 'Hacé clic en "Instalar" en la App Store y autorizá los permisos. ZohoSync queda embebida dentro de tu admin — sin panel externo.',
+                  title: 'Instala desde Tiendanube',
+                  desc: 'Haz clic en "Instalar" en la App Store y autoriza los permisos. ZohoSync queda embebida dentro de tu admin — sin panel externo.',
                 },
                 {
                   step: '02',
                   icon: Layers,
-                  title: 'Conectá Zoho Inventory',
-                  desc: 'Autorizá tu cuenta de Zoho con OAuth 2.0. ZohoSync nunca almacena tu contraseña — solo un token seguro y revocable.',
+                  title: 'Conecta Zoho Inventory',
+                  desc: 'Autoriza tu cuenta de Zoho con OAuth 2.0. ZohoSync nunca almacena tu contraseña — solo un token seguro y revocable.',
                 },
                 {
                   step: '03',
                   icon: RefreshCw,
-                  title: 'Empezá a sincronizar',
-                  desc: 'Los webhooks se registran automáticamente. Las órdenes fluyen a Zoho en segundos. El stock se sincroniza cuando vos lo decidís.',
+                  title: 'Empieza a sincronizar',
+                  desc: 'Los webhooks se registran automáticamente. Las órdenes fluyen a Zoho en segundos. El stock se sincroniza cuando tú lo decides.',
                 },
               ].map((item) => (
                 <div key={item.step} className="bg-card rounded-xl p-6 border border-border shadow-sm relative">
@@ -331,7 +331,7 @@ export function LandingHero() {
                     {
                       icon: Clock,
                       title: 'Historial completo',
-                      desc: 'Cada operación queda registrada con estado, duración y mensaje. Reintentá errores individualmente.',
+                      desc: 'Cada operación queda registrada con estado, duración y mensaje. Reintenta errores individualmente.',
                     },
                   ].map((item) => (
                     <div key={item.title} className="flex gap-4 items-start">
@@ -386,87 +386,6 @@ export function LandingHero() {
           </div>
         </section>
 
-        {/* ── PRICING ── */}
-        <section className="py-20 lg:py-24 bg-secondary/30 border-y border-border">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <Badge variant="outline" className="mb-4 text-primary border-primary/30">Precios</Badge>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-4">
-                Simple y sin sorpresas
-              </h2>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                30 días de acceso completo gratis. Sin tarjeta de crédito.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-              {/* Plan Básico */}
-              <div className="bg-card rounded-2xl border border-border p-8 shadow-sm">
-                <div className="mb-6">
-                  <div className="font-bold text-foreground text-lg mb-1">Básico</div>
-                  <div className="text-3xl font-extrabold text-foreground">Gratis</div>
-                  <div className="text-muted-foreground text-sm mt-1">Para siempre</div>
-                </div>
-                <ul className="space-y-3 mb-8">
-                  {[
-                    'Sync de órdenes por webhook',
-                    'Hasta 500 clientes sincronizados',
-                    'Historial de operaciones',
-                    'Soporte por email',
-                  ].map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-sm text-foreground">
-                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Button variant="outline" className="w-full" onClick={handleConnect}>
-                  Comenzar gratis
-                </Button>
-              </div>
-
-              {/* Plan Pro */}
-              <div className="bg-primary rounded-2xl p-8 shadow-lg relative overflow-hidden">
-                <div className="absolute top-4 right-4">
-                  <span className="bg-white/20 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                    Más popular
-                  </span>
-                </div>
-                <div className="mb-6">
-                  <div className="font-bold text-primary-foreground text-lg mb-1">Pro</div>
-                  <div className="flex items-baseline gap-1">
-                    <div className="text-3xl font-extrabold text-primary-foreground">USD 29</div>
-                    <div className="text-primary-foreground/70 text-sm">/mes</div>
-                  </div>
-                  <div className="text-primary-foreground/70 text-sm mt-1">20% off para merchants Tiendanube</div>
-                </div>
-                <ul className="space-y-3 mb-8">
-                  {[
-                    'Todo lo del plan Básico',
-                    'Sync de stock en bulk',
-                    'Importación ilimitada de productos',
-                    'Clientes ilimitados',
-                    'Vista previa antes de sincronizar',
-                    'Soporte prioritario (SLA 24h)',
-                  ].map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-sm text-primary-foreground">
-                      <CheckCircle2 className="w-4 h-4 text-white/80 flex-shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  className="w-full bg-white text-primary hover:bg-white/90 font-semibold"
-                  onClick={handleConnect}
-                >
-                  Probar 30 días gratis
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* ── FINAL CTA ── */}
         <section className="py-20 lg:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -478,15 +397,15 @@ export function LandingHero() {
                 ¿Listo para dejar de cargar datos a mano?
               </h2>
               <p className="text-muted-foreground mb-8 text-lg leading-relaxed">
-                Instalá ZohoSync en minutos y dejá que tu tienda y Zoho Inventory
+                Instala ZohoSync en minutos y deja que tu tienda y Zoho Inventory
                 se mantengan sincronizados solos.
               </p>
               <Button size="lg" onClick={handleConnect} className="px-10 h-13 text-base font-semibold rounded-lg">
-                Instalar ZohoSync gratis
+                Instalar ZohoSync
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
               <p className="text-sm text-muted-foreground mt-4">
-                30 días gratis · Sin tarjeta de crédito · Cancelás cuando querés
+                Instalación en minutos · Sin configuraciones complejas
               </p>
             </div>
           </div>
