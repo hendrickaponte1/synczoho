@@ -2,7 +2,7 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 export const TN_API = "https://api.tiendanube.com/v1";
-export const TN_USER_AGENT = "TiendaSync (support@lovable.dev)";
+export const TN_USER_AGENT = "ZohoSync/1.0 (support@synczoho.com)";
 
 export interface TiendanubeStore {
   store_id: string;
