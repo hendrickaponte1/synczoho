@@ -3,7 +3,7 @@
 import { corsHeaders, getAdminClient, logSync } from "../_shared/zoho.ts";
 import { getStore, tnFetch, tnFetchJson } from "../_shared/tiendanube.ts";
 
-// Eventos requeridos para sincronización de órdenes y clientes
+// Eventos requeridos para sincronización de órdenes, clientes y ciclo de vida de la app
 const REQUIRED_EVENTS = [
   "order/created",
   "order/updated",
@@ -11,6 +11,8 @@ const REQUIRED_EVENTS = [
   "order/cancelled",
   "customer/created",
   "customer/updated",
+  "app/uninstalled",
+  "app/suspended",
 ];
 
 Deno.serve(async (req) => {

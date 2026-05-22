@@ -1,4 +1,6 @@
-// Desconecta una tienda: elimina la conexión Zoho y marca la tienda como inactiva.
+// Desconecta una tienda manualmente desde el panel de synczoho.
+// Elimina todos los datos asociados a la tienda de forma idempotente:
+// si la tienda ya no existe (ej: fue desinstalada desde TN admin), devuelve success igual.
 import { corsHeaders, getAdminClient } from "../_shared/zoho.ts";
 
 Deno.serve(async (req) => {
@@ -15,22 +17,28 @@ Deno.serve(async (req) => {
 
     const admin = getAdminClient();
 
-    // 1. Eliminar conexión Zoho
-    await admin.from("zoho_connections").delete().eq("store_id", store_id);
+    // Eliminar todos los datos de la tienda (operación idempotente).
+    // Si la tienda ya fue eliminada (ej: via app/uninstalled webhook) estas
+    // operaciones simplemente afectan 0 filas — sin errores.
+    await Promise.allSettled([
+      admin.from("zoho_connections").delete().eq("store_id", store_id),
+      admin.from("sync_settings").delete().eq("store_id", store_id),
+      admin.from("sync_logs").delete().eq("store_id", store_id),
+    ]);
 
-    // 2. Marcar tienda como inactiva en lugar de eliminarla (preserva historial)
-    await admin
-      .from("stores")
-      .update({ status: "disconnected" })
-      .eq("store_id", store_id);
+    // Eliminar la tienda al final (foreign keys dependen de store_id)
+    await admin.from("stores").delete().eq("store_id", store_id);
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    console.error("[tiendanube-disconnect] error:", e instanceof Error ? e.message : e);
+    // Devolvemos 200 igualmente: si ocurre un error parcial, el estado local
+    // del cliente igual debe limpiarse para evitar mostrar una sesión rota.
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "unknown" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ ok: true, warning: e instanceof Error ? e.message : "partial error" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });

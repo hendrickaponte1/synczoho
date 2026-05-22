@@ -87,6 +87,18 @@ Deno.serve(async (req) => {
 
     const conn = await getZohoConnection(admin, storeId);
 
+    // Cargar mapeos de categorías para esta tienda
+    const { data: catMappingsRaw } = await admin
+      .from("category_mappings")
+      .select("zoho_category, tn_category_id")
+      .eq("store_id", storeId);
+    const catMap = new Map<string, number>(
+      (catMappingsRaw ?? []).map((m: { zoho_category: string; tn_category_id: number }) => [
+        m.zoho_category,
+        m.tn_category_id,
+      ]),
+    );
+
     const results: Array<{
       zoho_item_id: string;
       status: "success" | "error" | "skipped";
@@ -104,7 +116,7 @@ Deno.serve(async (req) => {
         let tnProductId: number | null = entry.tiendanube_product_id || null;
 
         if (entry.action === "create") {
-          const payload = buildCreatePayload(product, F, publish);
+          const payload = buildCreatePayload(product, F, publish, catMap);
           if (F.images) {
             const imgs = await fetchProductImages(admin, conn, product);
             if (imgs.length > 0) payload.images = imgs;
@@ -360,6 +372,7 @@ function buildCreatePayload(
   p: ZohoProductData,
   F: typeof DEFAULT_FIELDS,
   publish: boolean,
+  catMap: Map<string, number> = new Map(),
 ): Record<string, any> {
   const payload: Record<string, any> = { published: publish };
 
@@ -367,7 +380,12 @@ function buildCreatePayload(
   if (F.description) payload.description = { es: p.description || "" };
   if (F.brand && p.brand) payload.brand = p.brand;
   if (F.category && p.category_name) {
-    payload.categories = [{ name: { es: p.category_name } }];
+    const mappedId = catMap.get(p.category_name);
+    // Si existe un mapeo explícito → usar ID de TN (evita duplicados por nombre)
+    // Si no → crear/buscar por nombre (comportamiento previo)
+    payload.categories = mappedId
+      ? [{ id: mappedId }]
+      : [{ name: { es: p.category_name } }];
   }
 
   // attributes en TN: array de nombres traducibles
