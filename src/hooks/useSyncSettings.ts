@@ -28,11 +28,6 @@ export interface SyncSettings {
   stock_priority: 'zoho' | 'tiendanube';
   stock_warehouse_id: string | null;
   customers_auto_sync_on_order: boolean;
-  alert_on_error: boolean;
-  alert_email: string | null;
-  prices_enabled: boolean;
-  stock_schedule: 'disabled' | 'hourly' | 'every6h' | 'daily';
-  prices_schedule: 'disabled' | 'hourly' | 'every6h' | 'daily';
   products_publish_on_import: boolean;
   products_overwrite_existing: boolean;
   products_match_strategy: 'sku' | 'name';

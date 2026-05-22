@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box, Card, Title, Text, Tag, Button, Spinner, Checkbox, Input } from '@nimbus-ds/components';
-import { LogOutIcon, BellIcon } from '@nimbus-ds/icons';
+import { LogOutIcon, NotificationIcon } from '@nimbus-ds/icons';
 import { ZohoConnectCard } from '@/components/ZohoConnectCard';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { FieldHelp } from '@/components/FieldHelp';
@@ -102,7 +102,7 @@ export function ConfigurationView({ storeId, storeName, storeMeta, onDisconnect 
       <Card>
         <Card.Header>
           <Box display="flex" alignItems="center" gap="2">
-            <BellIcon />
+            <NotificationIcon />
             <Title as="h4" fontSize="h5">Alertas por email</Title>
           </Box>
         </Card.Header>
