@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Box, Card, Title, Text, Tag, Select, Button, Spinner, Alert, Table, Skeleton,
+  Box, Card, Title, Text, Tag, Select, Button, Spinner, Alert, Table,
 } from '@nimbus-ds/components';
 import { RedoIcon } from '@nimbus-ds/icons';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,7 +24,6 @@ const OPERATION_LABELS: Record<string, string> = {
   order_sync:             'Sincronización de orden',
   customer_sync_bulk:     'Sincronización de clientes',
   stock_sync_run:         'Sincronización de stock',
-  price_sync_run:         'Sincronización de precios',
   tiendanube_webhook:     'Webhook recibido',
   dashboard_metrics:      'Métricas del dashboard',
 };
@@ -35,7 +34,6 @@ const OPERATION_OPTIONS = [
   { value: 'order_zoho_create', label: 'Órdenes' },
   { value: 'customer_sync_bulk', label: 'Clientes' },
   { value: 'stock_sync_run', label: 'Stock' },
-  { value: 'price_sync_run', label: 'Precios' },
 ];
 
 function formatOp(op: string) {
@@ -96,7 +94,7 @@ export function SyncLogsView({ storeId }: Props) {
           <Card.Body>
             <Box display="flex" flexDirection="column" gap="1">
               <Text fontSize="caption" color="neutral-textLow">Registros mostrados</Text>
-              {loading ? <Skeleton height="32px" width="48px" borderRadius="4px" /> : <Title as="h3" fontSize="h3">{String(logs.length)}</Title>}
+              <Title as="h3" fontSize="h3">{loading ? '—' : String(logs.length)}</Title>
             </Box>
           </Card.Body>
         </Card>
@@ -104,7 +102,7 @@ export function SyncLogsView({ storeId }: Props) {
           <Card.Body>
             <Box display="flex" flexDirection="column" gap="1">
               <Text fontSize="caption" color="neutral-textLow">Exitosos</Text>
-              {loading ? <Skeleton height="32px" width="48px" borderRadius="4px" /> : <Title as="h3" fontSize="h3">{String(successCount)}</Title>}
+              <Title as="h3" fontSize="h3">{loading ? '—' : String(successCount)}</Title>
             </Box>
           </Card.Body>
         </Card>
@@ -112,7 +110,7 @@ export function SyncLogsView({ storeId }: Props) {
           <Card.Body>
             <Box display="flex" flexDirection="column" gap="1">
               <Text fontSize="caption" color="neutral-textLow">Con error</Text>
-              {loading ? <Skeleton height="32px" width="48px" borderRadius="4px" /> : <Title as="h3" fontSize="h3">{String(errCount)}</Title>}
+              <Title as="h3" fontSize="h3">{loading ? '—' : String(errCount)}</Title>
               {!loading && errCount > 0 && (
                 <Text fontSize="caption" color="danger-textLow">Requieren atención</Text>
               )}
@@ -162,28 +160,9 @@ export function SyncLogsView({ storeId }: Props) {
           </Box>
 
           {loading ? (
-            <Table>
-              <Table.Head>
-                <Table.Row>
-                  <Table.Cell as="th">Operación</Table.Cell>
-                  <Table.Cell as="th">Estado</Table.Cell>
-                  <Table.Cell as="th">Mensaje</Table.Cell>
-                  <Table.Cell as="th">Duración</Table.Cell>
-                  <Table.Cell as="th">Fecha</Table.Cell>
-                </Table.Row>
-              </Table.Head>
-              <Table.Body>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Table.Row key={i}>
-                    <Table.Cell><Skeleton height="16px" width="140px" borderRadius="4px" /></Table.Cell>
-                    <Table.Cell><Skeleton height="20px" width="60px" borderRadius="4px" /></Table.Cell>
-                    <Table.Cell><Skeleton height="16px" width="200px" borderRadius="4px" /></Table.Cell>
-                    <Table.Cell><Skeleton height="16px" width="60px" borderRadius="4px" /></Table.Cell>
-                    <Table.Cell><Skeleton height="16px" width="80px" borderRadius="4px" /></Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
+            <Box display="flex" justifyContent="center" padding="6">
+              <Spinner />
+            </Box>
           ) : logs.length === 0 ? (
             <Alert appearance="neutral">
               No hay registros con los filtros seleccionados.

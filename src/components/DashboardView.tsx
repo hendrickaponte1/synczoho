@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Card, Title, Text, Tag, Button, Spinner, Skeleton } from '@nimbus-ds/components';
+import { Box, Card, Title, Text, Tag, Button, Spinner } from '@nimbus-ds/components';
 import {
   TagIcon,
   CashIcon,
@@ -43,7 +43,6 @@ const OP_LABEL: Record<string, string> = {
   order_sync:         'Orden sincronizada',
   customer_sync_bulk: 'Clientes sincronizados',
   stock_sync_run:     'Sincronización de stock',
-  price_sync_run:     'Sincronización de precios',
   tiendanube_webhook: 'Webhook recibido',
 };
 
@@ -144,29 +143,25 @@ export function DashboardView({ storeId, onNavigate }: DashboardViewProps) {
         <MetricCard
           icon={<TagIcon size="medium" />}
           label="Productos sincronizados"
-          loading={loading}
-          value={String(metrics?.productsSynced ?? 0)}
+          value={loading ? '—' : String(metrics?.productsSynced ?? 0)}
           hint={metrics?.productsPending ? `${metrics.productsPending} pendientes` : undefined}
         />
         <MetricCard
           icon={<CashIcon size="medium" />}
           label="Órdenes enviadas a Zoho"
-          loading={loading}
-          value={String(metrics?.ordersSynced ?? 0)}
+          value={loading ? '—' : String(metrics?.ordersSynced ?? 0)}
           hint={metrics?.ordersError ? `${metrics.ordersError} con error` : undefined}
           hintAppearance={metrics?.ordersError ? 'danger' : 'neutral'}
         />
         <MetricCard
           icon={<StatsIcon size="medium" />}
           label="SKUs con stock sincronizado"
-          loading={loading}
-          value={String(metrics?.stockSynced ?? 0)}
+          value={loading ? '—' : String(metrics?.stockSynced ?? 0)}
         />
         <MetricCard
           icon={<UserGroupIcon size="medium" />}
           label="Clientes sincronizados"
-          loading={loading}
-          value={String(metrics?.customersSynced ?? 0)}
+          value={loading ? '—' : String(metrics?.customersSynced ?? 0)}
         />
       </Box>
 
@@ -185,30 +180,7 @@ export function DashboardView({ storeId, onNavigate }: DashboardViewProps) {
         </Card.Header>
         <Card.Body>
           {logsLoading ? (
-            <Box display="flex" flexDirection="column" gap="0">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '12px',
-                    padding: '12px 0',
-                    borderBottom: i < 3 ? '1px solid var(--nimbus-color-neutral-surface-highlight, #eee)' : 'none',
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <Skeleton height="20px" width="44px" borderRadius="4px" />
-                      <Skeleton height="14px" width="160px" borderRadius="4px" />
-                    </div>
-                    <Skeleton height="12px" width="260px" borderRadius="4px" />
-                  </div>
-                  <Skeleton height="12px" width="64px" borderRadius="4px" />
-                </div>
-              ))}
-            </Box>
+            <Box display="flex" justifyContent="center" padding="4"><Spinner /></Box>
           ) : recentLogs.length === 0 ? (
             <Text color="neutral-textLow">Sin actividad registrada aún.</Text>
           ) : (
@@ -301,14 +273,12 @@ function MetricCard({
   icon,
   label,
   value,
-  loading = false,
   hint,
   hintAppearance = 'neutral',
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
-  loading?: boolean;
   hint?: string;
   hintAppearance?: 'neutral' | 'danger';
 }) {
@@ -320,11 +290,8 @@ function MetricCard({
             {icon}
             <Text fontSize="caption" color="neutral-textLow">{label}</Text>
           </Box>
-          {loading
-            ? <Skeleton height="40px" width="72px" borderRadius="4px" />
-            : <Title as="h3" fontSize="h2">{value}</Title>
-          }
-          {!loading && hint && (
+          <Title as="h3" fontSize="h2">{value}</Title>
+          {hint && (
             <Text fontSize="caption" color={hintAppearance === 'danger' ? 'danger-textLow' : 'neutral-textLow'}>
               {hint}
             </Text>

@@ -9,7 +9,6 @@ import {
   Checkbox,
   Tag,
   Spinner,
-  Skeleton,
   Table,
   Pagination,
   Alert,
@@ -32,7 +31,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSyncSettings, type ProductSyncFields } from '@/hooks/useSyncSettings';
 import { ProgressButton } from '@/components/ProgressButton';
 import { FieldHelp } from '@/components/FieldHelp';
-import { CategoryMappingsCard } from '@/components/CategoryMappingsCard';
 import { toast } from 'sonner';
 
 interface ZohoVariant {
@@ -111,11 +109,6 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
   const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
   const [results, setResults] = useState<ImportResult[] | null>(null);
   const [detail, setDetail] = useState<ZohoItem | null>(null);
-  const [selectingAll, setSelectingAll] = useState(false);
-
-  // Banner "seleccionar todo el catálogo" — aparece cuando se seleccionó toda la página actual y hay más
-  const allPageSelected = items.length > 0 && items.every((i) => selected.has(i.row_id));
-  const canSelectAll = allPageSelected && hasMore && !selectingAll;
 
   // Sync default publish con la configuración guardada
   useEffect(() => {
@@ -198,45 +191,6 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
     }
     setSelected(nextSelected);
     setSelectionData(nextData);
-  };
-
-  const selectAllCatalog = async () => {
-    setSelectingAll(true);
-    try {
-      // Ya tenemos la página actual; paginamos el resto
-      const allItems: ZohoItem[] = [...items];
-      let p = page + 1;
-      while (true) {
-        const { data } = await supabase.functions.invoke('zoho-list-items', {
-          body: {
-            store_id: storeId,
-            page: p,
-            per_page: PER_PAGE,
-            search: search || undefined,
-            status: statusFilter || undefined,
-            stock: stockFilter || undefined,
-            match: matchFilter || undefined,
-          },
-        });
-        if (!data?.items?.length) break;
-        allItems.push(...(data.items as ZohoItem[]));
-        if (!data.page_context?.has_more_page) break;
-        if (++p > 50) break; // safety cap
-      }
-      const nextSelected = new Set<string>();
-      const nextData = new Map<string, ZohoItem>();
-      allItems.forEach((item) => {
-        nextSelected.add(item.row_id);
-        nextData.set(item.row_id, item);
-      });
-      setSelected(nextSelected);
-      setSelectionData(nextData);
-      toast.success(`${nextSelected.size} productos seleccionados`);
-    } catch {
-      toast.error('Error al cargar todos los items');
-    } finally {
-      setSelectingAll(false);
-    }
   };
 
   // selectedItems incluye items de todas las páginas (usando el cache)
@@ -428,9 +382,6 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
         </Card.Body>
       </Card>
 
-      {/* Mapeo de categorías */}
-      <CategoryMappingsCard storeId={storeId} />
-
       {/* Filtros */}
       <Card>
         <Card.Body>
@@ -528,46 +479,21 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
 
       {/* Acciones bulk */}
       {selected.size > 0 && (
-        <Alert appearance="primary" title={`${selected.size} producto(s) seleccionado(s)`}>
-          <Box display="flex" flexDirection="column" gap="2">
-            <Box display="flex" gap="2" alignItems="center" flexWrap="wrap">
-              <ProgressButton
-                appearance="primary"
-                onClick={() => setConfirmOpen(true)}
-                loading={importing}
-                progress={importProgress}
-                icon={<DownloadIcon />}
-                loadingLabel="Sincronizando"
-              >
-                Sincronizar seleccionados
-              </ProgressButton>
-              <Button
-                appearance="transparent"
-                onClick={() => { setSelected(new Set()); setSelectionData(new Map()); }}
-              >
-                Cancelar
-              </Button>
-            </Box>
-
-            {/* Banner seleccionar todo el catálogo */}
-            {canSelectAll && (
-              <Box display="flex" alignItems="center" gap="2" flexWrap="wrap">
-                <Text fontSize="caption">
-                  Solo se seleccionaron los {items.length} de esta página.
-                </Text>
-                <Button appearance="neutral" onClick={selectAllCatalog}>
-                  Seleccionar todo el catálogo
-                </Button>
-              </Box>
-            )}
-            {selectingAll && (
-              <Box display="flex" alignItems="center" gap="2">
-                <Spinner size="small" />
-                <Text fontSize="caption" color="neutral-textLow">
-                  Cargando todas las páginas…
-                </Text>
-              </Box>
-            )}
+        <Alert appearance="primary" title={`${selected.size} item(s) seleccionado(s)`}>
+          <Box display="flex" gap="2" alignItems="center" flexWrap="wrap">
+            <ProgressButton
+              appearance="primary"
+              onClick={() => setConfirmOpen(true)}
+              loading={importing}
+              progress={importProgress}
+              icon={<DownloadIcon />}
+              loadingLabel="Sincronizando"
+            >
+              Sincronizar seleccionados
+            </ProgressButton>
+            <Button appearance="transparent" onClick={() => setSelected(new Set())}>
+              Cancelar
+            </Button>
           </Box>
         </Alert>
       )}
@@ -581,42 +507,8 @@ export function SyncProductsView({ storeId }: SyncProductsViewProps) {
       {/* Tabla */}
       <Card padding="none">
         {loading ? (
-          <Box overflow="auto">
-            <Table>
-              <Table.Head>
-                <Table.Row>
-                  <Table.Cell as="th" width="40px"><Skeleton height="16px" width="16px" /></Table.Cell>
-                  <Table.Cell as="th">Producto</Table.Cell>
-                  <Table.Cell as="th">SKU</Table.Cell>
-                  <Table.Cell as="th">Variantes</Table.Cell>
-                  <Table.Cell as="th">Precio</Table.Cell>
-                  <Table.Cell as="th">Stock</Table.Cell>
-                  <Table.Cell as="th">Estado</Table.Cell>
-                  <Table.Cell as="th">Último sync</Table.Cell>
-                  <Table.Cell as="th" width="80px" />
-                </Table.Row>
-              </Table.Head>
-              <Table.Body>
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <Table.Row key={i}>
-                    <Table.Cell><Skeleton height="16px" width="16px" /></Table.Cell>
-                    <Table.Cell>
-                      <Box display="flex" flexDirection="column" gap="1">
-                        <Skeleton height="14px" width="160px" borderRadius="4px" />
-                        <Skeleton height="11px" width="100px" borderRadius="4px" />
-                      </Box>
-                    </Table.Cell>
-                    <Table.Cell><Skeleton height="14px" width="72px" borderRadius="4px" /></Table.Cell>
-                    <Table.Cell><Skeleton height="20px" width="80px" borderRadius="4px" /></Table.Cell>
-                    <Table.Cell><Skeleton height="14px" width="56px" borderRadius="4px" /></Table.Cell>
-                    <Table.Cell><Skeleton height="14px" width="32px" borderRadius="4px" /></Table.Cell>
-                    <Table.Cell><Skeleton height="20px" width="72px" borderRadius="4px" /></Table.Cell>
-                    <Table.Cell><Skeleton height="14px" width="96px" borderRadius="4px" /></Table.Cell>
-                    <Table.Cell><Skeleton height="24px" width="24px" borderRadius="4px" /></Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
+          <Box padding="8" display="flex" justifyContent="center">
+            <Spinner size="large" />
           </Box>
         ) : items.length === 0 ? (
           <Box

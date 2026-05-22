@@ -7,38 +7,45 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  componentStack: string | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, componentStack: null };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, info: { componentStack: string }) {
     console.error('ErrorBoundary caught:', error, info.componentStack);
+    this.setState({ componentStack: info.componentStack });
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
-          <div className="bg-card rounded-xl p-8 max-w-md w-full text-center border border-border shadow-sm">
+          <div className="bg-card rounded-xl p-8 max-w-lg w-full text-center border border-border shadow-sm">
             <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
               <span className="text-destructive text-xl">!</span>
             </div>
             <h2 className="text-lg font-bold text-foreground mb-2">Algo salió mal</h2>
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="text-sm text-muted-foreground mb-4">
               Ocurrió un error inesperado. Por favor recargá la página.
             </p>
             {this.state.error && (
-              <p className="text-xs text-muted-foreground bg-muted rounded p-2 mb-6 text-left font-mono break-all">
-                {this.state.error.message}
-              </p>
+              <div className="bg-muted rounded p-3 mb-4 text-left text-xs font-mono break-all space-y-2">
+                <p className="text-destructive font-semibold">{this.state.error.message}</p>
+                {this.state.componentStack && (
+                  <pre className="text-muted-foreground whitespace-pre-wrap text-[10px] max-h-40 overflow-y-auto">
+                    {this.state.componentStack.trim()}
+                  </pre>
+                )}
+              </div>
             )}
             <button
               onClick={() => window.location.reload()}
