@@ -104,12 +104,14 @@ export default function Index() {
     const name = localStorage.getItem('tiendanube_store_name');
 
     if (id) {
-      // Verificar que la tienda sigue activa en la DB antes de mostrar el dashboard
+      // Verificar que la tienda sigue activa en la DB antes de mostrar el dashboard.
+      // store_found: false significa que la tienda fue eliminada (ej: app desinstalada desde TN)
       supabase
         .functions.invoke('zoho-connection-status', { body: { store_id: id } })
-        .then(({ error }) => {
-          if (error) {
-            // Si la función falla (tienda no encontrada), limpiar y mostrar landing
+        .then(({ data, error }) => {
+          const storeGone = error || data?.store_found === false;
+          if (storeGone) {
+            // La tienda ya no existe en la DB — limpiar estado local y mostrar landing
             localStorage.removeItem('tiendanube_store_id');
             localStorage.removeItem('tiendanube_store_name');
             localStorage.removeItem('tiendanube_store_handle');

@@ -30,11 +30,15 @@ export function ConfigurationView({ storeId, storeName, storeMeta, onDisconnect 
       });
       if (error) throw error;
       toast.success('Tienda desconectada correctamente');
-      onDisconnect?.();
     } catch (e: any) {
-      toast.error(e.message || 'Error al desconectar la tienda');
+      // Si la función falla es posible que el token ya sea inválido (app desinstalada
+      // desde TN admin). En ese caso el estado local debe limpiarse igual.
+      console.warn('[disconnect] error del servidor, limpiando sesión local:', e.message);
+      toast.success('Sesión desconectada');
     } finally {
       setDisconnecting(false);
+      // Siempre limpiar estado local al final, independientemente del resultado del servidor
+      onDisconnect?.();
     }
   };
 

@@ -36,7 +36,9 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!store) {
-      return new Response(JSON.stringify({ connection: null }), {
+      // store_found: false permite al frontend distinguir entre
+      // "tienda eliminada/desinstalada" vs "Zoho no conectado todavía"
+      return new Response(JSON.stringify({ connection: null, store_found: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -47,7 +49,7 @@ Deno.serve(async (req) => {
       .eq("store_id", storeId)
       .maybeSingle();
 
-    return new Response(JSON.stringify({ connection: connection || null }), {
+    return new Response(JSON.stringify({ connection: connection || null, store_found: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
