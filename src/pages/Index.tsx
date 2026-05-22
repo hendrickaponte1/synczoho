@@ -47,6 +47,17 @@ export default function Index() {
       return;
     }
 
+    // ?reset=1 → forzar limpieza de sesión local y mostrar landing
+    const reset = searchParams.get('reset');
+    if (reset) {
+      localStorage.removeItem('tiendanube_store_id');
+      localStorage.removeItem('tiendanube_store_name');
+      localStorage.removeItem('tiendanube_store_handle');
+      navigate('/', { replace: true });
+      setLoading(false);
+      return;
+    }
+
     const code = searchParams.get('code');
 
     if (code) {
